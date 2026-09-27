@@ -48,12 +48,11 @@
   .ballbadge small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
   .ballbadge b { display: block; font-weight: 500; font-size: 13px; line-height: 1.2; }
 
-  .say { margin: 16px 0 0; border-radius: 16px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; animation: pop .4s cubic-bezier(.2,1.4,.4,1); }
-  .say .e { font-size: 34px; line-height: 1; }
+  .say { margin: 16px 0 0; border-radius: 16px; padding: 14px 18px; border-left: 4px solid var(--ink-3); animation: pop .4s cubic-bezier(.2,1.4,.4,1); }
   .say b { display: block; font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -.01em; line-height: 1.2; }
   .say span { font-size: 14.5px; color: var(--ink-2); }
-  .say.good { background: rgba(47,158,87,.11); } .say.good b { color: var(--good); }
-  .say.bad { background: rgba(208,68,58,.09); } .say.bad b { color: var(--bad); }
+  .say.good { background: rgba(47,158,87,.11); border-color: var(--good); } .say.good b { color: var(--good); }
+  .say.bad { background: rgba(208,68,58,.09); border-color: var(--bad); } .say.bad b { color: var(--bad); }
   .say.meh { background: rgba(22,22,40,.05); }
   @keyframes pop { from { transform: scale(.96); opacity: 0; } }
 
@@ -125,7 +124,7 @@
     .pinbadge, .ballbadge { max-width: none; padding: 6px; box-shadow: none; gap: 8px; }
     .pinbadge img, .ballbadge img { width: 36px; height: 36px; }
     .pinbadge b, .ballbadge b { font-size: 12.5px; }
-    .say { padding: 12px; } .say .e { font-size: 28px; } .say b { font-size: 18px; } .say span { font-size: 13.5px; }
+    .say { padding: 12px 14px; } .say b { font-size: 18px; } .say span { font-size: 13.5px; }
     .ask { margin: 14px 0 8px; } .ask span { display: none; }
     .shots { gap: 8px; }
     .club { padding: 7px 8px; flex-direction: column; align-items: flex-start; gap: 0; } .club kbd { display: none; }
@@ -156,7 +155,7 @@
     <canvas id="course" aria-label="Side view of the hole: tee, your ball and the green"></canvas>
     <div class="badges">
     <div class="ballbadge" id="ballbadge" hidden><img id="ball-img" alt=""><div><small>Your ball is on</small><b id="ball-name"></b></div></div>
-    <div class="pinbadge" id="pinbadge" hidden><img id="pin-img" alt=""><div><small>⛳ The pin</small><b id="pin-name"></b></div></div>
+    <div class="pinbadge" id="pinbadge" hidden><img id="pin-img" alt=""><div><small>The pin</small><b id="pin-name"></b></div></div>
     </div>
   </section>
 
@@ -407,15 +406,15 @@ function render() {
   $("shots").innerHTML = hole.offer.map((j, c) => {
     const pin = j === hole.goal;
     return `<button class="shot${pin ? " pin" : ""}" data-c="${c}" title="${esc(D.items[j][1])}">
-      <div class="club"><b>${pin ? "⛳ Putt" : CLUBS[c].name}</b><small>${pin ? "in the hole" : CLUBS[c].carry}<kbd>${c + 1}</kbd></small></div>
+      <div class="club"><b>${pin ? "Putt" : CLUBS[c].name}</b><small>${pin ? "in the hole" : CLUBS[c].carry}<kbd>${c + 1}</kbd></small></div>
       <div class="pic"><img src="${esc(D.items[j][2])}" alt=""></div>
       <div class="nm">${esc(shortName(j))}</div></button>`;
   }).join("");
   document.querySelectorAll(".shot").forEach(b => b.onclick = () => shoot(+b.dataset.c));
 }
 
-function say(kind, emoji, title, sub) {
-  $("say").innerHTML = `<div class="say ${kind}"><div class="e">${emoji}</div><div><b>${esc(title)}</b><span>${esc(sub)}</span></div></div>`;
+function say(kind, title, sub) {
+  $("say").innerHTML = `<div class="say ${kind}"><b>${esc(title)}</b><span>${esc(sub)}</span></div>`;
 }
 
 // How did that shot go, and why? The "why" is the model's link: shoppers who look at one also look at the other.
@@ -424,12 +423,12 @@ function commentate(club, from, to, before, after) {
   const link = `Shoppers who look at ${a} also look at ${b}`;
   const where = D.items[to][4] === D.items[hole.goal][4] ? `, and that’s ${family(to)}, where the pin is.` : `, over in ${family(to)}.`;
   const gain = before - after, m = Math.abs(gain).toLocaleString("en-US");
-  if (gain >= 260) return say("good", "🚀", club === 2 ? `WOW, what a drive! ${m} m closer` : `WOW, you got far! ${m} m closer`, link + where);
-  if (gain >= 120) return say("good", "💪", `Great ${verb}! ${m} m closer`, link + where);
-  if (gain > 30) return say("good", "👍", `Nice ${verb}, ${m} m closer`, link + where);
-  if (gain >= -30) return say("meh", "😐", "A little dribble…", `${link}, but that doesn’t get you nearer the pin.`);
-  if (gain > -250) return say("bad", "🙈", `Well, that was a duffer. ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
-  return say("bad", "🌪️", club === 2 ? `Sliced it into the rough! ${m} m back` : `Into the rough! ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
+  if (gain >= 260) return say("good", club === 2 ? `WOW, what a drive! ${m} m closer` : `WOW, you got far! ${m} m closer`, link + where);
+  if (gain >= 120) return say("good", `Great ${verb}! ${m} m closer`, link + where);
+  if (gain > 30) return say("good", `Nice ${verb}, ${m} m closer`, link + where);
+  if (gain >= -30) return say("meh", "A little dribble…", `${link}, but that doesn’t get you nearer the pin.`);
+  if (gain > -250) return say("bad", `Well, that was a duffer. ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
+  return say("bad", club === 2 ? `Sliced it into the rough! ${m} m back` : `Into the rough! ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
 }
 
 function shoot(club) {
@@ -459,7 +458,7 @@ function termFor(strokes, par) {
   const d = strokes - par;
   return ({ "-3": "Albatross!", "-2": "Eagle!", "-1": "Birdie!", "0": "Par!", "1": "Bogey", "2": "Double bogey", "3": "Triple bogey" })[d] ?? `+${d}`;
 }
-const emoji = (s, p) => s - p <= -2 ? "🦅" : s - p === -1 ? "🐦" : s === p ? "⛳" : s - p === 1 ? "🟨" : "🟥";
+const tone = (s, p) => s < p ? "var(--good)" : s > p ? "var(--bad)" : "var(--ink)";
 const rel = n => n === 0 ? "E" : n > 0 ? "+" + n : String(n);
 
 function startHole() {
@@ -469,7 +468,7 @@ function startHole() {
   hole.length = Math.ceil((m0 + 40) / 100) * 100;
   hole.marks = [m0];
   $("holedone").hidden = true;
-  say("meh", "🏌️", `Hole ${game.hole + 1}: ${m0} m, par ${h.par}`, `Get from ${shortName(h.start)} to ${shortName(h.goal)}.`);
+  say("meh", `Hole ${game.hole + 1}: ${m0} m, par ${h.par}`, `Get from ${shortName(h.start)} to ${shortName(h.goal)}.`);
   render();
 }
 
@@ -478,7 +477,7 @@ function finishHole(pickedUp = false) {
   game.scores[game.hole] = hole.strokes;
   $("strokes").textContent = hole.strokes;
   document.querySelectorAll(".shot").forEach(b => b.disabled = true);
-  if (!pickedUp) say("good", "⛳", "In the hole!", `${hole.strokes} strokes on a par ${hole.par}.`);
+  if (!pickedUp) say("good", "In the hole!", `${hole.strokes} strokes on a par ${hole.par}.`);
   $("hd-hole").textContent = `Hole ${game.hole + 1} · par ${hole.par}`;
   $("hd-title").textContent = pickedUp ? "Picked up" : termFor(hole.strokes, hole.par);
   $("hd-sub").textContent = pickedUp ? `Counted as ${hole.strokes}. The shortest route took ${hole.best} shots.`
@@ -499,7 +498,7 @@ function finishCourse() {
   $("end-total").textContent = rel(total - par);
   $("end-card").innerHTML = `<tr><th>Hole</th>${pars.map((_, i) => `<th>${i + 1}</th>`).join("")}<th>Total</th></tr>
     <tr><td>Par</td>${pars.map(p => `<td>${p}</td>`).join("")}<td>${par}</td></tr>
-    <tr><td><b>You</b></td>${game.scores.map((s, i) => `<td><b>${s}</b> ${emoji(s, pars[i])}</td>`).join("")}<td><b>${total}</b></td></tr>`;
+    <tr><td><b>You</b></td>${game.scores.map((s, i) => `<td><b style="color:${tone(s, pars[i])}">${s}</b></td>`).join("")}<td><b>${total}</b></td></tr>`;
   $("end").hidden = false;
   try { if (game.daily) localStorage.setItem("golf-daily-" + game.seed, String(total - par)); } catch {}
 }
@@ -521,7 +520,7 @@ $("again").onclick = () => start(randomSeed(), false);
 $("share").onclick = async () => {
   const pars = game.course.map(h => h.par), total = game.scores.reduce((a, b) => a + b, 0), par = pars.reduce((a, b) => a + b, 0);
   const url = new URL(location.href); url.search = "?seed=" + encodeURIComponent(game.seed);
-  const text = `MapGolf${game.daily ? " " + game.seed : ""}: ${rel(total - par)} (${total} on par ${par})\n${game.scores.map((s, i) => emoji(s, pars[i])).join(" ")}\n${url}`;
+  const text = `MapGolf${game.daily ? " " + game.seed : ""}: ${rel(total - par)} (${total} on par ${par})\n${game.scores.map((s, i) => `Hole ${i + 1}: ${s} (par ${pars[i]})`).join(" · ")}\n${url}`;
   if (navigator.share && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ text }); return; } catch {} }
   try { await navigator.clipboard.writeText(text); toast("Scorecard copied, paste it anywhere"); } catch { prompt("Copy your scorecard:", text); }
 };
