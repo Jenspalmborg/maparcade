@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MapGolf</title>
+<meta name="description" content="Get from one product to another in as few shots as possible. Every shot jumps to a product BehaviorGPT thinks is similar.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfbfa; --surface: #ffffff; --line: rgba(22, 22, 40, .08);
+    --ink: #17171f; --ink-2: #565a6b; --ink-3: #8d909e;
+    --green: #2f8f4e; --green-soft: rgba(47, 143, 78, .1); --flag: #e0453a;
+    --good: #2f9e57; --ok: #d88a1c; --bad: #d0443a;
+    --display: "Bricolage Grotesque", "Inter", sans-serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --radius: 16px; color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+
+  .app { display: grid; grid-template-columns: 1fr 430px; height: 100dvh; }
+  .mapwrap { position: relative; min-width: 0; }
+  #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  header { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+  header > * { pointer-events: auto; }
+  a.brand { color: inherit; text-decoration: none; font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
+  .flagicon { width: 22px; height: 22px; }
+  .hud { display: flex; gap: 4px; padding: 5px; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 14px;
+         box-shadow: 0 1px 2px rgba(22,22,40,.05), 0 8px 24px rgba(22,22,40,.07); }
+  .hud div { padding: 3px 12px; text-align: center; }
+  .hud small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .hud b { font-family: var(--display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Side panel */
+  .panel { background: var(--surface); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  .scroll { overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .prod { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+  .prod img { width: 64px; height: 64px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .prod .n { font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .prod .c { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .goal { background: #fff5f4; border: 1px solid rgba(224,69,58,.18); border-radius: 14px; padding: 12px; }
+  .goal .label { color: var(--flag); }
+  .here { border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .here .prod { grid-template-columns: 84px 1fr; }
+  .here .prod img { width: 84px; height: 84px; }
+  .togo { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .togo b { font-family: var(--display); font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .togo span { color: var(--ink-2); font-size: 14px; }
+  .delta { margin-left: auto; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .delta.closer { color: var(--good); background: rgba(47,158,87,.1); }
+  .delta.further { color: var(--bad); background: rgba(208,68,58,.1); }
+  .delta.same { color: var(--ink-2); background: rgba(22,22,40,.05); }
+
+  .clubs { display: grid; gap: 12px; }
+  .club .label b { color: var(--ink); font-weight: 600; letter-spacing: .04em; }
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .shot { display: grid; grid-template-columns: 48px 1fr; gap: 9px; align-items: center; text-align: left; cursor: pointer; background: #fff;
+          border: 1px solid var(--line); border-radius: 12px; padding: 7px; transition: border-color .12s, background .12s, transform .08s; position: relative; }
+  .shot:hover, .shot:focus-visible { border-color: var(--green); background: var(--green-soft); outline: none; }
+  .shot:active { transform: scale(.98); }
+  .shot img { width: 48px; height: 48px; object-fit: contain; background: #fff; border-radius: 8px; }
+  .shot span { padding-right: 10px; font-size: 12.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .shot kbd { position: absolute; top: 5px; right: 6px; font: 600 10px var(--sans); color: var(--ink-3); }
+  .shot.is-goal { border-color: var(--flag); background: #fff5f4; }
+
+  .foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 12px 22px; font-weight: 600; font-size: 15px; background: var(--green); color: #fff;
+         box-shadow: 0 8px 22px rgba(47,143,78,.25); transition: filter .15s, transform .1s; text-decoration: none; text-align: center; }
+  .btn:hover { filter: brightness(1.06); } .btn:active { transform: scale(.98); }
+  .btn.ghost { background: rgba(22,22,40,.04); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+  .btn.small { padding: 8px 14px; font-size: 13px; flex: 1; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; overflow-y: auto;
+             background: radial-gradient(ellipse at center, rgba(251,251,250,.5), rgba(251,251,250,.92)); }
+  .modal { width: min(480px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 30px 28px 26px; text-align: center;
+           box-shadow: 0 2px 4px rgba(22,22,40,.05), 0 24px 60px rgba(22,22,40,.14); }
+  .modal h1 { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -.035em; line-height: 1; margin: 8px 0 12px; }
+  .modal h1 span { color: var(--green); }
+  .modal h2 { font-family: var(--display); font-weight: 800; font-size: 34px; letter-spacing: -.03em; margin: 4px 0 6px; }
+  .lede { color: var(--ink-2); margin: 0 auto 20px; max-width: 36ch; text-wrap: balance; }
+  .steps { text-align: left; display: grid; gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
+  .steps li { display: flex; gap: 12px; color: var(--ink-2); font-size: 14px; }
+  .steps b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-size: 12px; }
+  .actions { display: flex; flex-direction: column; gap: 10px; }
+  .path { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 0 20px; }
+  .path img { width: 42px; height: 42px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .path .arrow { color: var(--ink-3); align-self: center; font-size: 12px; }
+  .path img.start { border-color: var(--ink); } .path img.end { border-color: var(--flag); }
+  .card { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-variant-numeric: tabular-nums; }
+  .card th, .card td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .card th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .card td:first-child, .card th:first-child { text-align: left; }
+  .total { font-family: var(--display); font-weight: 800; font-size: 56px; letter-spacing: -.03em; line-height: 1; }
+  .fine { margin-top: 16px; font-size: 12px; color: var(--ink-3); }
+  .fine a { color: var(--ink-2); }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 18px; border-radius: 999px;
+           background: var(--ink); color: #fff; font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--ink-3); z-index: 30; background: var(--bg); }
+
+  @media (max-width: 860px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; grid-template-rows: 38dvh auto; height: auto; min-height: 100dvh; }
+    .panel { border-left: 0; border-top: 1px solid var(--line); }
+    .scroll { overflow: visible; padding: 14px 14px; gap: 12px; }
+    .foot { padding: 10px 14px max(12px, env(safe-area-inset-bottom)); }
+    header { padding: 10px 12px; }
+    a.brand { font-size: 17px; }
+    .shot kbd { display: none; }
+    .modal { padding: 24px 18px 20px; }
+    .modal h1 { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="flag" viewBox="0 0 24 24"><path d="M6 21V3" stroke="#17171f" stroke-width="2" stroke-linecap="round"/><path d="M6 3l12 4.5L6 12z" fill="#e0453a"/></symbol>
+</svg>
+
+<div class="app">
+  <div class="mapwrap">
+    <canvas id="map" aria-label="Map of the product catalog with your path"></canvas>
+    <header>
+      <a class="brand" href="../" title="All games"><svg class="flagicon"><use href="#flag"/></svg>MapGolf</a>
+      <div class="hud" id="hud" hidden>
+        <div><small>Hole</small><b id="hole">1 / 3</b></div>
+        <div><small>Par</small><b id="par">5</b></div>
+        <div><small>Strokes</small><b id="strokes">0</b></div>
+      </div>
+    </header>
+  </div>
+
+  <aside class="panel">
+    <div class="scroll">
+      <section class="goal">
+        <div class="label"><span>⛳ Get to the flag</span></div>
+        <div class="prod" id="goal"></div>
+      </section>
+      <section class="here">
+        <div class="label"><span>You are at</span></div>
+        <div class="prod" id="here"></div>
+        <div class="togo"><b id="togo">–</b><span id="togo-text">shots to the flag, at best</span><span class="delta" id="delta" hidden></span></div>
+      </section>
+      <section class="clubs" id="clubs"></section>
+    </div>
+    <div class="foot">
+      <button class="btn ghost small" id="undo" disabledtitle="Go back one shot. The stroke still counts.">↶ Mulligan</button>
+      <button class="btn ghost small" id="giveup">Pick up (+4)</button>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="intro" hidden>
+  <div class="modal">
+    <svg class="flagicon" style="width:34px;height:34px"><use href="#flag"/></svg>
+    <h1>Map<span>Golf</span></h1>
+    <p class="lede">Get from one product to another in as few shots as possible, using the AI’s idea of what’s similar.</p>
+    <ol class="steps">
+      <li><b>1</b>Each shot jumps to one of six products BehaviorGPT ranks as similar to where you are.</li>
+      <li><b>2</b>Putters move a tiny step, irons a shelf over, drivers can reach another aisle. Hover a shot to see where it lands.</li>
+      <li><b>3</b>Reach the flag in as few strokes as you can. Three holes, each with a par.</li>
+    </ol>
+    <div class="actions">
+      <button class="btn" id="play-daily">Play today’s course</button>
+      <button class="btn ghost" id="play-random">Random course</button>
+    </div>
+    <p class="fine"><a href="../">← All games</a></p>
+  </div>
+</div>
+
+<div class="overlay" id="holedone" hidden>
+  <div class="modal">
+    <div class="label" style="justify-content:center" id="hd-hole"></div>
+    <h2 id="hd-title"></h2>
+    <p class="lede" id="hd-sub" style="margin-bottom:0"></p>
+    <div class="path" id="hd-path"></div>
+    <div class="actions"><button class="btn" id="hd-next"></button></div>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="modal">
+    <div class="label" style="justify-content:center" id="end-title"></div>
+    <div class="total" id="end-total"></div>
+    <table class="card" id="end-card"></table>
+    <div class="actions">
+      <button class="btn" id="share">Share scorecard</button>
+      <button class="btn ghost" id="again">Play a random course</button>
+      <a class="btn ghost" href="../">All games</a>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">Loading the course…</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const HOLES = 3;
+const CLUB_NAMES = [["Putter", "tiny step"], ["Iron", "next shelf over"], ["Driver", "long shot"]];
+const COLORS = ["#df8b3e", "#3b6fd9", "#d65db1", "#5c9e3f", "#1f9aa0", "#c2412d", "#6a35d9"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const short = (s, n = 70) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+let D, G;                   // map data, golf clubs
+let game = null, hole = null;
+let hover = -1;
+const canvas = $("map"), ctx = canvas.getContext("2d");
+let W = 0, H = 0;
+const view = { cx: .5, cy: .5, zoom: 1 };
+let flight = null, dirty = true;
+
+// ---------- Seeded randomness so a course is the same for everyone ----------
+function rng(seed) {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) { h = Math.imul(h ^ seed.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+  return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+
+// Shots needed from every product to the goal: breadth-first search backwards along the clubs.
+let reverse = null;
+function distancesTo(goal) {
+  const dist = new Int16Array(G.clubs.length).fill(-1);
+  dist[goal] = 0;
+  const queue = [goal];
+  for (let q = 0; q < queue.length; q++) {
+    const v = queue[q];
+    for (const u of reverse[v]) if (dist[u] < 0) { dist[u] = dist[v] + 1; queue.push(u); }
+  }
+  return dist;
+}
+
+function makeCourse(seed) {
+  const rand = rng("golf:" + seed), holes = [], usedFam = new Set();
+  const pool = D.pool.filter(i => G.clubs[i][0] >= 0);
+  for (let h = 0; h < HOLES; h++) {
+    for (let tries = 0; tries < 200; tries++) {
+      const goal = pool[Math.floor(rand() * pool.length)], dist = distancesTo(goal);
+      const fGoal = D.items[goal][4];
+      if (usedFam.has(fGoal) && tries < 100) continue;
+      // Starts 4–6 good shots away, ideally on another continent.
+      let starts = pool.filter(i => dist[i] >= 4 && dist[i] <= 6 && D.items[i][4] !== fGoal);
+      if (!starts.length) starts = pool.filter(i => dist[i] >= 3 && dist[i] <= 8);
+      if (!starts.length) continue;
+      const start = starts[Math.floor(rand() * starts.length)];
+      usedFam.add(fGoal);
+      holes.push({ start, goal, par: dist[start] + 1, best: dist[start] });
+      break;
+    }
+  }
+  return holes;
+}
+
+// ---------- Map drawing ----------
+const base = () => Math.min(W, H) * 0.9;
+const toScreen = (x, y) => [W / 2 + (x - view.cx) * base() * view.zoom, H / 2 + (y - view.cy) * base() * view.zoom];
+const pos = i => [D.items[i][5], D.items[i][6]];
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2), r = canvas.getBoundingClientRect();
+  W = r.width; H = r.height;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dirty = true;
+}
+
+function frame() {
+  if (!hole) return;
+  const pts = [hole.start, hole.goal, hole.path.at(-1), ...G.clubs[hole.path.at(-1)].filter(i => i >= 0)].map(pos);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const w = Math.max(...xs) - Math.min(...xs) + 0.12, h = Math.max(...ys) - Math.min(...ys) + 0.12;
+  const zoom = Math.max(1, Math.min(5, Math.min(W / (base() * w), (H - 90) / (base() * h))));
+  const to = { cx: (Math.max(...xs) + Math.min(...xs)) / 2, cy: (Math.max(...ys) + Math.min(...ys)) / 2 - 20 / (base() * zoom), zoom };
+  flight = { from: { ...view }, to, t0: performance.now() };
+}
+
+function draw(now) {
+  requestAnimationFrame(draw);
+  if (flight) {
+    const t = Math.min(1, (now - flight.t0) / 650), e = 1 - Math.pow(1 - t, 3);
+    view.cx = flight.from.cx + (flight.to.cx - flight.from.cx) * e;
+    view.cy = flight.from.cy + (flight.to.cy - flight.from.cy) * e;
+    view.zoom = flight.from.zoom * Math.pow(flight.to.zoom / flight.from.zoom, e);
+    if (t === 1) flight = null;
+    dirty = true;
+  }
+  if (!D || (!dirty && !hole)) return;
+  dirty = false;
+  ctx.clearRect(0, 0, W, H);
+
+  const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k;
+  const r = Math.max(1.6, Math.min(5, 1.6 * Math.sqrt(view.zoom)));
+  ctx.globalAlpha = hole ? 0.4 : 0.8;
+  COLORS.forEach((col, f) => {
+    ctx.fillStyle = col; ctx.beginPath();
+    for (const row of D.items) {
+      if (row[4] !== f) continue;
+      const sx = ox + row[5] * k, sy = oy + row[6] * k;
+      if (sx < -6 || sy < -6 || sx > W + 6 || sy > H + 6) continue;
+      ctx.moveTo(sx + r, sy); ctx.arc(sx, sy, r, 0, 7);
+    }
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Landmarks for orientation.
+  ctx.font = "600 11px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const boxes = [], limit = Math.round(10 + view.zoom * 20);
+  for (let i = 0; i < Math.min(limit, D.labels.length); i++) {
+    const l = D.labels[i], [sx, sy] = toScreen(l.x, l.y);
+    if (sx < 0 || sy < 0 || sx > W || sy > H) continue;
+    const text = l.t.toUpperCase(), w = ctx.measureText(text).width + 10, b = [sx - w / 2, sy - 9, w, 18];
+    if (boxes.some(o => b[0] < o[0] + o[2] && b[0] + b[2] > o[0] && b[1] < o[1] + o[3] && b[1] + b[3] > o[1])) continue;
+    boxes.push(b);
+    ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(251,251,250,.9)"; ctx.strokeText(text, sx, sy);
+    ctx.fillStyle = "rgba(23,23,31,.5)"; ctx.fillText(text, sx, sy);
+  }
+  if (!hole) return;
+
+  const now2 = performance.now(), cur = hole.path.at(-1), [cx, cy] = toScreen(...pos(cur));
+
+  // Where each club would land.
+  G.clubs[cur].forEach((j, n) => {
+    if (j < 0) return;
+    const [x, y] = toScreen(...pos(j)), on = j === hover;
+    if (on) {
+      ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(47,143,78,.9)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.beginPath(); ctx.arc(x, y, on ? 9 : 6.5, 0, 7);
+    ctx.fillStyle = on ? "#2f8f4e" : "#fff"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#2f8f4e"; ctx.stroke();
+    ctx.fillStyle = on ? "#fff" : "#2f8f4e"; ctx.font = "700 9px Inter, sans-serif"; ctx.fillText(String(n + 1), x, y + .5);
+  });
+
+  // The path so far.
+  ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#17171f";
+  ctx.beginPath(); hole.path.forEach((i, n) => { const [x, y] = toScreen(...pos(i)); n ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+  hole.path.slice(1, -1).forEach(i => { const [x, y] = toScreen(...pos(i)); ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fillStyle = "#17171f"; ctx.fill(); });
+
+  // Tee, flag and ball.
+  const [sx, sy] = toScreen(...pos(hole.start));
+  ctx.beginPath(); ctx.arc(sx, sy, 6, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#17171f"; ctx.stroke();
+  const [gx, gy] = toScreen(...pos(hole.goal));
+  ctx.beginPath(); ctx.ellipse(gx, gy, 9, 3.5, 0, 0, 7); ctx.fillStyle = "rgba(22,22,40,.25)"; ctx.fill();
+  ctx.strokeStyle = "#17171f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy - 30); ctx.stroke();
+  ctx.fillStyle = "#e0453a"; ctx.beginPath(); ctx.moveTo(gx, gy - 30); ctx.lineTo(gx + 18, gy - 23.5); ctx.lineTo(gx, gy - 17); ctx.fill();
+  const pulse = (now2 / 1000) % 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 8 + pulse * 16, 0, 7); ctx.strokeStyle = `rgba(23,23,31,${0.5 * (1 - pulse)})`; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#17171f"; ctx.stroke();
+}
+
+// ---------- Panel ----------
+function prodHTML(i, withFam = true) {
+  const row = D.items[i], f = row[4];
+  return `<img src="${esc(row[2])}" alt=""><div><div class="n" title="${esc(row[1])}">${esc(short(row[1], 90))}</div>` +
+         (withFam ? `<div class="c" style="color:${COLORS[f]}">${esc(D.families[f])}</div>` : "") + `</div>`;
+}
+
+function render(prevTogo) {
+  const cur = hole.path.at(-1), togo = hole.dist[cur];
+  $("hole").textContent = `${game.hole + 1} / ${HOLES}`;
+  $("par").textContent = hole.par;
+  $("strokes").textContent = hole.strokes;
+  $("goal").innerHTML = prodHTML(hole.goal);
+  $("here").innerHTML = prodHTML(cur);
+  $("togo").textContent = togo >= 0 ? togo : "∞";
+  $("togo-text").textContent = togo >= 0 ? (togo === 1 ? "shot to the flag, at best" : "shots to the flag, at best") : "no way to the flag from here. Take a mulligan!";
+  const delta = $("delta");
+  if (prevTogo == null || prevTogo < 0 || togo < 0) delta.hidden = true;
+  else {
+    delta.hidden = false;
+    delta.className = "delta " + (togo < prevTogo ? "closer" : togo > prevTogo ? "further" : "same");
+    delta.textContent = togo < prevTogo ? "▼ closer" : togo > prevTogo ? "▲ further" : "= same";
+  }
+  const shots = G.clubs[cur];
+  $("clubs").innerHTML = CLUB_NAMES.map(([name, hint], c) => `
+    <div class="club"><div class="label"><span><b>${name}</b> · ${hint}</span></div><div class="shots">` +
+      [0, 1].map(s => {
+        const n = c * 2 + s, j = shots[n];
+        if (j < 0) return "";
+        return `<button class="shot${j === hole.goal ? " is-goal" : ""}" data-j="${j}" data-n="${n}"><img src="${esc(D.items[j][2])}" alt=""><span>${j === hole.goal ? "⛳ " : ""}${esc(short(D.items[j][1], 80))}</span><kbd>${n + 1}</kbd></button>`;
+      }).join("") + `</div></div>`).join("");
+  document.querySelectorAll(".shot").forEach(b => {
+    b.onclick = () => shoot(+b.dataset.j);
+    b.onmouseenter = b.onfocus = () => { hover = +b.dataset.j; dirty = true; };
+    b.onmouseleave = b.onblur = () => { hover = -1; dirty = true; };
+  });
+  $("undo").disabled = hole.path.length < 2;
+  frame();
+}
+
+function shoot(j) {
+  if (!hole || hole.done) return;
+  const prev = hole.dist[hole.path.at(-1)];
+  hole.path.push(j); hole.strokes++; hover = -1;
+  if (j === hole.goal) return finishHole();
+  if (hole.strokes >= hole.par + 5) return finishHole(true);
+  render(prev);
+}
+
+$("undo").onclick = () => {
+  if (!hole || hole.path.length < 2) return;
+  const prev = hole.dist[hole.path.at(-1)];
+  hole.path.pop(); hole.strokes++;
+  toast("Mulligan: back one shot, stroke still counts");
+  if (hole.strokes >= hole.par + 5) return finishHole(true);
+  render(prev);
+};
+$("giveup").onclick = () => { if (hole && !hole.done) { hole.strokes = hole.par + 4; finishHole(true); } };
+
+document.addEventListener("keydown", e => {
+  if (!hole || hole.done || !/^[1-6]$/.test(e.key)) return;
+  const j = G.clubs[hole.path.at(-1)][+e.key - 1];
+  if (j >= 0) shoot(j);
+});
+
+// ---------- Holes and course ----------
+function termFor(strokes, par) {
+  if (strokes === 1) return "Hole in one!";
+  const d = strokes - par;
+  return ({ "-3": "Albatross!", "-2": "Eagle!", "-1": "Birdie!", "0": "Par", "1": "Bogey", "2": "Double bogey", "3": "Triple bogey" })[d] ?? `+${d}`;
+}
+const emoji = (s, p) => s - p <= -2 ? "🦅" : s - p === -1 ? "🐦" : s === p ? "⛳" : s - p === 1 ? "🟨" : "🟥";
+const rel = n => n === 0 ? "E" : n > 0 ? "+" + n : String(n);
+
+function startHole() {
+  const h = game.course[game.hole];
+  hole = { ...h, path: [h.start], strokes: 0, dist: distancesTo(h.goal), done: false };
+  $("holedone").hidden = true;
+  render(null);
+}
+
+function finishHole(pickedUp = false) {
+  hole.done = true;
+  game.scores[game.hole] = hole.strokes;
+  $("strokes").textContent = hole.strokes;
+  dirty = true; frame();
+  $("hd-hole").textContent = `Hole ${game.hole + 1} · par ${hole.par}`;
+  $("hd-title").textContent = pickedUp ? "Picked up" : termFor(hole.strokes, hole.par);
+  $("hd-sub").textContent = pickedUp
+    ? `Counted as ${hole.strokes}. It could be done in ${hole.best}.`
+    : hole.strokes === hole.best
+      ? `${hole.strokes} stroke${hole.strokes === 1 ? "" : "s"}: you found the shortest route there is!`
+      : `${hole.strokes} strokes. The shortest route takes ${hole.best}.`;
+  const shown = hole.path.length > 9 ? [...hole.path.slice(0, 4), -1, ...hole.path.slice(-4)] : hole.path;
+  $("hd-path").innerHTML = shown.map((i, n) => i < 0 ? `<span class="arrow">…</span>` :
+    `${n ? '<span class="arrow">→</span>' : ""}<img src="${esc(D.items[i][2])}" alt="" title="${esc(D.items[i][1])}" class="${i === hole.start ? "start" : i === hole.goal ? "end" : ""}">`).join("");
+  const last = game.hole === HOLES - 1;
+  $("hd-next").textContent = last ? "See your scorecard" : "Next hole →";
+  $("hd-next").onclick = () => last ? finishCourse() : (game.hole++, startHole());
+  setTimeout(() => { $("holedone").hidden = false; $("hd-next").focus(); }, 500);
+}
+
+function finishCourse() {
+  $("holedone").hidden = true;
+  const pars = game.course.map(h => h.par), total = game.scores.reduce((a, b) => a + b, 0), par = pars.reduce((a, b) => a + b, 0);
+  $("end-title").textContent = game.daily ? `Daily course · ${game.seed}` : "Your round";
+  $("end-total").textContent = rel(total - par);
+  $("end-card").innerHTML = `<tr><th>Hole</th>${pars.map((_, i) => `<th>${i + 1}</th>`).join("")}<th>Total</th></tr>
+    <tr><td>Par</td>${pars.map(p => `<td>${p}</td>`).join("")}<td>${par}</td></tr>
+    <tr><td><b>You</b></td>${game.scores.map((s, i) => `<td><b>${s}</b> ${emoji(s, pars[i])}</td>`).join("")}<td><b>${total}</b></td></tr>`;
+  $("end").hidden = false;
+  try { if (game.daily) localStorage.setItem("golf-daily-" + game.seed, String(total - par)); } catch {}
+}
+
+function start(seed, daily) {
+  game = { seed, daily, course: makeCourse(seed), hole: 0, scores: [] };
+  const url = new URL(location.href); url.searchParams.set("seed", seed); history.replaceState(null, "", url);
+  $("intro").hidden = true; $("end").hidden = true; $("hud").hidden = false;
+  startHole();
+}
+
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+const randomSeed = () => Math.random().toString(36).slice(2, 8);
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+
+$("play-daily").onclick = () => start(today(), true);
+$("play-random").onclick = () => start(randomSeed(), false);
+$("again").onclick = () => start(randomSeed(), false);
+$("share").onclick = async () => {
+  const pars = game.course.map(h => h.par), total = game.scores.reduce((a, b) => a + b, 0), par = pars.reduce((a, b) => a + b, 0);
+  const url = new URL(location.href); url.search = "?seed=" + encodeURIComponent(game.seed);
+  const text = `MapGolf${game.daily ? " " + game.seed : ""}: ${rel(total - par)} (${total} on par ${par})\n${game.scores.map((s, i) => emoji(s, pars[i])).join(" ")}\n${url}`;
+  if (navigator.share && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ text }); return; } catch {} }
+  try { await navigator.clipboard.writeText(text); toast("Scorecard copied, paste it anywhere"); } catch { prompt("Copy your scorecard:", text); }
+};
+
+// ---------- Boot ----------
+addEventListener("resize", () => { resize(); frame(); });
+Promise.all([fetch("../data.json").then(r => r.json()), fetch("../golf.json").then(r => r.json())]).then(([data, golf]) => {
+  D = data; G = golf;
+  reverse = G.clubs.map(() => []);
+  G.clubs.forEach((shots, a) => shots.forEach(b => { if (b >= 0) reverse[b].push(a); }));
+  resize();
+  $("loading").hidden = true;
+  requestAnimationFrame(draw);
+  const seed = new URLSearchParams(location.search).get("seed");
+  if (seed) start(seed, /^\d{4}-\d{2}-\d{2}$/.test(seed));
+  else $("intro").hidden = false;
+}).catch(() => { $("loading").textContent = "Couldn’t load the course."; });
+</script>
+</body>
+</html>
