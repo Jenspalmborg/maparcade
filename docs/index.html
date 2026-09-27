@@ -6,8 +6,8 @@
 <title>Map Arcade</title>
 <meta name="description" content="Two games on BehaviorGPT's map of 8,409 products: ProductGuessr and MapGolf.">
 <script>
-  // Old ProductGuessr share links (/?seed=…) now live under /guessr/.
-  if (new URLSearchParams(location.search).has("seed")) location.replace("guessr/" + location.search);
+  // Old ProductGuessr share links (/?seed=…) now live under /productguessr/.
+  if (new URLSearchParams(location.search).has("seed")) location.replace("productguessr/" + location.search);
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +65,7 @@
   </section>
 
   <section class="games">
-    <a class="game guessr" href="guessr/">
+    <a class="game guessr" href="productguessr/">
       <div class="preview"><canvas id="pv-guessr"></canvas></div>
       <div class="body">
         <span class="tag">Where does it live?</span>
@@ -74,7 +74,7 @@
         <div class="play"><span class="btn">Play →</span><span class="meta">5 rounds · daily challenge</span></div>
       </div>
     </a>
-    <a class="game golf" href="golf/">
+    <a class="game golf" href="mapgolf/">
       <div class="preview"><canvas id="pv-golf"></canvas></div>
       <div class="body">
         <span class="tag">Get from A to B</span>
@@ -85,7 +85,7 @@
     </a>
   </section>
 
-  <footer>Built on <a href="https://github.com/Unbox-AI/behaviorgpt">BehaviorGPT</a> by UnboxAI · <a href="https://github.com/Jenspalmborg/productguessr">Source</a></footer>
+  <footer>Built on <a href="https://github.com/Unbox-AI/behaviorgpt">BehaviorGPT</a> by UnboxAI · <a href="https://github.com/Jenspalmborg/maparcade">Source</a></footer>
 </div>
 
 <script>

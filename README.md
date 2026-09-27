@@ -1,16 +1,16 @@
-# Map Arcade: ProductGuessr and MapGolf
+# Map Arcade
 
 Two games on [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt)'s map of 8,409 products.
 
-- **ProductGuessr** (`/guessr/`): GeoGuessr for products.
-- **MapGolf** (`/golf/`): get from one product to another in as few shots as possible, jumping only between products the model ranks as similar.
+- **ProductGuessr** (`/productguessr/`): GeoGuessr for products.
+- **MapGolf** (`/mapgolf/`): get from one product to another in as few shots as possible, jumping only between products the model ranks as similar.
 
 ## ProductGuessr
 
 
 GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a mystery product (a blurred photo and a price), drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Unblurring the photo or showing the name costs 300 points each. From round 3 the map loses a clue each round: first the continent names, then the landmarks, then the legend. Five rounds, a daily challenge, and a shareable result.
 
-**[▶ Play here](https://jenspalmborg.github.io/productguessr/)**
+**[▶ Play here](https://jenspalmborg.github.io/maparcade/)**
 
 ![Where on the map is the phone mount?](docs/screenshots/guess.png)
 
@@ -41,12 +41,12 @@ The distance to the pin counts the steps left along the model's links (200 m eac
 The built map is committed in `docs/data.json`, so playing needs no key at all:
 
 ```sh
-git clone https://github.com/Jenspalmborg/productguessr.git
-cd productguessr
+git clone https://github.com/Jenspalmborg/maparcade.git
+cd maparcade
 python3 -m http.server 8000 -d docs
 ```
 
-Open http://localhost:8000 and pick a game. Links like `/guessr/?seed=2026-09-27` or `/golf/?seed=2026-09-27` replay the same game, so friends can play it too.
+Open http://localhost:8000 and pick a game. Links like `/productguessr/?seed=2026-09-27` or `/mapgolf/?seed=2026-09-27` replay the same game, so friends can play it too.
 
 The site is plain HTML, CSS and JS with no build step, so GitHub Pages can host it straight from the `docs/` folder.
 
@@ -74,7 +74,7 @@ uv run python scripts/build_golf.py         # links -> docs/golf.json, plus a co
 4. **Continents.** The raw map is an archipelago (see below), which reads as confetti. So the categories are folded into seven broad groups, and each group's islands are gathered into one continent: the model's arrangement within a group is kept, shrunk, with far-flung islands tucked in. The biggest continent sits in the middle and the others around it, in the direction the model's map puts them. Products with no category join the group of their nearest neighbours on the model's map.
 5. **Even clouds.** The model packs similar products onto the exact same point (8,409 products on ~1,900 spots). Dots that overlap push each other apart, a mild pull keeps each continent together, and a little noise makes it look organic. Neighbours stay neighbours; only the spacing changes.
 6. **Landmarks.** For each region of the map, the word that is far more common there than elsewhere ("espresso", "mattress", "iphone") becomes a label, so players can find their way.
-7. **Game.** [`docs/guessr/index.html`](docs/guessr/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking. Difficulty climbs by removing clues per round (`CLUES` in the page), and every clue comes back on the reveal so players learn the map as they go.
+7. **Game.** [`docs/productguessr/index.html`](docs/productguessr/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking. Difficulty climbs by removing clues per round (`CLUES` in the page), and every clue comes back on the reveal so players learn the map as they go.
 
 ## What the map looks like up close
 
@@ -95,8 +95,9 @@ scripts/
   build_golf.py   neighbours -> docs/golf.json (36 most similar per product)
 docs/
   index.html      start page: pick a game
-  guessr/         ProductGuessr (no build step)
-  golf/           MapGolf (no build step)
+  productguessr/  ProductGuessr (no build step)
+  mapgolf/        MapGolf (no build step)
+  guessr/, golf/  redirects from the old paths
   data.json       the built map, shared by both games
   golf.json       MapGolf's links between products
   screenshots/    README images
