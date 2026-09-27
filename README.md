@@ -1,6 +1,6 @@
 # ProductGuessr
 
-GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a product, drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Five rounds, a daily challenge, and a shareable result.
+GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a mystery product (a blurred photo and a price), drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Unblurring the photo or showing the name costs 500 points each. Every round strips a clue from the map: continent names, then landmarks, then the legend, and round 5 is a grey map from memory. Five rounds, a daily challenge, and a shareable result.
 
 ![Where on the map is the phone mount?](docs/screenshots/guess.png)
 
@@ -55,7 +55,7 @@ uv run python scripts/build_map.py          # fetch the map, write docs/data.jso
 4. **Continents.** The raw map is an archipelago (see below), which reads as confetti. So the categories are folded into seven broad groups, and each group's islands are gathered into one continent: the model's arrangement within a group is kept, shrunk, with far-flung islands tucked in. The biggest continent sits in the middle and the others around it, in the direction the model's map puts them. Products with no category join the group of their nearest neighbours on the model's map.
 5. **Even clouds.** The model packs similar products onto the exact same point (8,409 products on ~1,900 spots). Dots that overlap push each other apart, a mild pull keeps each continent together, and a little noise makes it look organic. Neighbours stay neighbours; only the spacing changes.
 6. **Landmarks.** For each region of the map, the word that is far more common there than elsewhere ("espresso", "mattress", "iphone") becomes a label, so players can find their way.
-7. **Game.** [`docs/index.html`](docs/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking.
+7. **Game.** [`docs/index.html`](docs/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking. Difficulty climbs by removing clues per round (`CLUES` in the page), and every clue comes back on the reveal so players learn the map as they go.
 
 ## What the map looks like up close
 

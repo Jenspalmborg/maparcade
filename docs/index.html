@@ -50,13 +50,28 @@
   .hud b { font-family: var(--display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
   /* Product card */
-  .card { position: fixed; top: 72px; left: 18px; width: 260px; z-index: 4; overflow: hidden; transition: opacity .25s, transform .25s; }
+  .card { position: fixed; top: 72px; left: 18px; width: 300px; z-index: 4; overflow: hidden; transition: opacity .25s, transform .25s; }
   .card .ask { padding: 12px 16px 10px; font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
   .card .pic { background: #fff; border-bottom: 1px solid var(--line); height: 190px; display: grid; place-items: center; }
   .card .pic img { max-width: 86%; max-height: 88%; object-fit: contain; }
   .card .meta { padding: 12px 16px 16px; }
   .card .name { font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .card .price { margin-top: 6px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .card .ask { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .clue { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 600; color: var(--ink-2);
+          background: rgba(22,22,40,.05); padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .clue[data-level="4"] { color: #fff; background: var(--ink); }
+  .card .pic { overflow: hidden; position: relative; }
+  .card .pic img { transition: filter .45s, transform .45s; }
+  .card .pic.blurred img { filter: blur(11px) saturate(.8); transform: scale(1.08); }
+  .card .name.hidden { color: var(--ink-3); font-style: italic; }
+  .buys { display: flex; gap: 6px; margin-top: 10px; }
+  .buy { flex: 1; border: 1px solid var(--line); background: rgba(22,22,40,.03); border-radius: 9px; padding: 6px 6px; cursor: pointer;
+         font-size: 12px; font-weight: 600; color: var(--ink); display: flex; justify-content: center; gap: 5px; white-space: nowrap; }
+  .buy:hover { border-color: var(--ink-3); }
+  .buy b { color: var(--bad); font-weight: 600; }
+  .buy[hidden] { display: none; }
+  .penalty { color: var(--bad); font-size: 14px; }
 
   /* Bottom action area */
   .dock { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
@@ -137,6 +152,8 @@
     .card .meta { padding: 8px 12px 10px; }
     .card .name { -webkit-line-clamp: 2; font-size: 14px; }
     .card .price { margin-top: 2px; font-size: 13px; }
+    .buys { margin-top: 6px; }
+    .buy { padding: 5px 4px; font-size: 11.5px; }
     .legend { display: none; }
     .dock { width: calc(100% - 120px); left: 16px; transform: none; align-items: flex-start; }
     .dock .result { width: calc(100vw - 32px); }
@@ -163,11 +180,15 @@
 </header>
 
 <section class="card glass" id="card" hidden>
-  <div class="ask">Where on the map is…</div>
-  <div class="pic"><img id="card-img" alt=""></div>
+  <div class="ask"><span>Where is this?</span><span class="clue" id="clue"></span></div>
+  <div class="pic" id="card-pic"><img id="card-img" alt=""></div>
   <div class="meta">
     <div class="name" id="card-name"></div>
     <div class="price" id="card-price"></div>
+    <div class="buys">
+      <button class="buy" id="buy-photo" type="button">Unblur photo <b>−500</b></button>
+      <button class="buy" id="buy-name" type="button">Show name <b>−500</b></button>
+    </div>
   </div>
 </section>
 
@@ -191,9 +212,9 @@
     <h1>Product<span>Guessr</span></h1>
     <p class="lede">An AI has sorted 8,000 products into a map of seven continents, with similar things living side by side. Can you guess where each one lives?</p>
     <ol class="steps">
-      <li><b>1</b>You get a product. Explore the map: colours are departments, labels are landmarks.</li>
-      <li><b>2</b>Drop your pin where you think it lives, then hit Guess.</li>
-      <li><b>3</b>The closer you land, the more points. Five rounds, 5,000 each.</li>
+      <li><b>1</b>You get a mystery product: a blurry photo and a price. Unblur it or show its name for 500 points each.</li>
+      <li><b>2</b>Drop your pin where you think it lives. The closer, the more points: up to 5,000 a round.</li>
+      <li><b>3</b>Each round strips a clue: continent names, landmarks, the legend, then the colours. Round 5 is from memory.</li>
     </ol>
     <div class="actions">
       <button class="btn" id="play-daily">Play today’s challenge</button>
@@ -224,6 +245,17 @@
 const ROUNDS = 5;
 const MAX_POINTS = 5000;
 const FALLOFF = 0.09;   // map units: points drop to 37% at this distance
+const HINT_COST = 500;
+// Each round takes a clue away while you guess; after a guess everything comes back.
+const CLUES = [
+  { names: true,  marks: true,  colors: true,  legend: true,  label: "All clues" },
+  { names: false, marks: true,  colors: true,  legend: true,  label: "No continent names" },
+  { names: false, marks: false, colors: true,  legend: true,  label: "Colours only" },
+  { names: false, marks: false, colors: true,  legend: false, label: "No legend" },
+  { names: false, marks: false, colors: false, legend: false, label: "From memory" },
+];
+const ALL_CLUES = CLUES[0];
+const clues = () => (document.body.dataset.phase === "guess" && game) ? CLUES[Math.min(game.round, CLUES.length - 1)] : ALL_CLUES;
 const COLORS = ["#df8b3e", "#3b6fd9", "#d65db1", "#5c9e3f", "#1f9aa0", "#c2412d", "#6a35d9"];
 
 // ---------- State ----------
@@ -326,11 +358,12 @@ function draw(now) {
 
   // Points
   // Round dots; bigger as you zoom in.
+  const clue = clues();
   const r = Math.max(1.8, Math.min(7, 1.8 * Math.sqrt(view.zoom)));
   const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k;
   ctx.globalAlpha = answer ? 0.28 : 0.82;
   byFamily.forEach((idxs, f) => {
-    ctx.fillStyle = COLORS[f];
+    ctx.fillStyle = clue.colors ? COLORS[f] : "#a9adb9";
     ctx.beginPath();
     for (const i of idxs) {
       const row = D.items[i], sx = ox + row[5] * k, sy = oy + row[6] * k;
@@ -343,7 +376,7 @@ function draw(now) {
 
   // Continent names when zoomed out; they fade as landmarks take over.
   const boxes = [];
-  const regionAlpha = Math.max(0, Math.min(1, (2.4 - view.zoom) / 1.2));
+  const regionAlpha = clue.names ? Math.max(0, Math.min(1, (2.4 - view.zoom) / 1.2)) : 0;
   if (regionAlpha > 0) {
     ctx.font = "800 17px 'Bricolage Grotesque', Inter, sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -358,7 +391,7 @@ function draw(now) {
   }
 
   // Landmarks: more appear as you zoom in; skip any that would overlap.
-  const limit = view.zoom < 1.3 ? 14 : Math.round(20 + view.zoom * 28);
+  const limit = !clue.marks ? 0 : view.zoom < 1.3 ? 14 : Math.round(20 + view.zoom * 28);
   ctx.font = "600 11px Inter, sans-serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   for (let i = 0; i < Math.min(limit, D.labels.length); i++) {
@@ -483,7 +516,7 @@ $("zfit").onclick = () => flyTo(.5, HOME_Y(), 1, 500);
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
 function start(seed, daily) {
-  game = { seed, daily, picks: pickRounds(seed), round: 0, guesses: [], scores: [] };
+  game = { seed, daily, picks: pickRounds(seed), round: 0, guesses: [], scores: [], penalties: [] };
   const url = new URL(location.href); url.searchParams.set("seed", seed);
   history.replaceState(null, "", url);
   $("intro").hidden = true; $("end").hidden = true;
@@ -494,9 +527,17 @@ function start(seed, daily) {
 function nextRound() {
   pin = null; hideTip();
   const it = item(game.picks[game.round]);
+  const clue = CLUES[Math.min(game.round, CLUES.length - 1)];
+  game.penalties[game.round] = 0;
   $("card-img").src = it.img;
-  $("card-name").textContent = it.name;
+  $("card-pic").classList.add("blurred");
+  $("card-name").textContent = "Name hidden";
+  $("card-name").classList.add("hidden");
   $("card-price").textContent = it.price != null ? "$" + it.price.toFixed(2) : "";
+  $("buy-photo").hidden = false; $("buy-name").hidden = false;
+  $("clue").textContent = clue.label;
+  $("clue").dataset.level = String(game.round);
+  $("legend").hidden = !clue.legend;
   $("card").hidden = false;
   $("round").textContent = `${game.round + 1} / ${ROUNDS}`;
   $("score").textContent = fmt(game.scores.reduce((a, b) => a + b, 0));
@@ -504,6 +545,20 @@ function nextRound() {
   setPhase("guess");
   flyTo(.5, HOME_Y(), 1, 500);
 }
+
+function unblur(paid) {
+  if (!$("card-pic").classList.contains("blurred")) return;
+  $("card-pic").classList.remove("blurred"); $("buy-photo").hidden = true;
+  if (paid) { game.penalties[game.round] += HINT_COST; toast(`Photo revealed · −${HINT_COST}`); }
+}
+function showName(paid) {
+  if (!$("card-name").classList.contains("hidden")) return;
+  $("card-name").textContent = item(game.picks[game.round]).name;
+  $("card-name").classList.remove("hidden"); $("buy-name").hidden = true;
+  if (paid) { game.penalties[game.round] += HINT_COST; toast(`Name revealed · −${HINT_COST}`); }
+}
+$("buy-photo").onclick = () => document.body.dataset.phase === "guess" && unblur(true);
+$("buy-name").onclick = () => document.body.dataset.phase === "guess" && showName(true);
 
 function verdict(pts) {
   if (pts >= 4500) return "Bullseye!";
@@ -524,15 +579,21 @@ function submitGuess() {
   if (!pin) return;
   const i = game.picks[game.round], it = item(i);
   const d = Math.hypot(pin[0] - it.x, pin[1] - it.y);
-  const pts = Math.round(MAX_POINTS * Math.exp(-d / FALLOFF));
+  const raw = Math.round(MAX_POINTS * Math.exp(-d / FALLOFF));
+  const penalty = Math.min(raw, game.penalties[game.round] || 0);
+  const pts = raw - penalty;
   game.guesses[game.round] = pin; game.scores[game.round] = pts;
+  // The answer is out: show the product in full and bring every clue back.
+  unblur(false); showName(false);
+  $("buy-photo").hidden = true; $("buy-name").hidden = true;
+  $("legend").hidden = false;
   $("score").textContent = fmt(game.scores.reduce((a, b) => a + b, 0));
 
   const last = game.round === ROUNDS - 1;
   const hood = nearest(i, 4).map(j => item(j));
   $("result").innerHTML = `
-    <div class="verdict">${verdict(pts)}</div>
-    <div class="pts">+${fmt(pts)}</div>
+    <div class="verdict">${verdict(raw)}</div>
+    <div class="pts">+${fmt(pts)}${penalty ? `<div class="penalty">${fmt(raw)} − ${fmt(penalty)} hints</div>` : ""}</div>
     <div class="sub">It lives in <b style="color:${COLORS[it.f]}">${esc(D.families[it.f])}</b>${hood.length ? ", next to…" : ""}</div>
     <div></div>
     <div class="bar"><i style="background:${tierColor(pts)}"></i></div>
