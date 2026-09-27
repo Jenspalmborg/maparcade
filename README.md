@@ -1,6 +1,6 @@
 # ProductGuessr
 
-GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a mystery product (a blurred photo and a price), drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Unblurring the photo or showing the name costs 500 points each. Every round strips a clue from the map: continent names, then landmarks, then the legend, and round 5 is a grey map from memory. Five rounds, a daily challenge, and a shareable result.
+GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a mystery product (a blurred photo and a price), drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Unblurring the photo or showing the name costs 300 points each. From round 3 the map loses a clue each round: first the continent names, then the landmarks, then the legend. Five rounds, a daily challenge, and a shareable result.
 
 ![Where on the map is the phone mount?](docs/screenshots/guess.png)
 

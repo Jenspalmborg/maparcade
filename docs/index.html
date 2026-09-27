@@ -63,7 +63,7 @@
   .clue[data-level="4"] { color: #fff; background: var(--ink); }
   .card .pic { overflow: hidden; position: relative; }
   .card .pic img { transition: filter .45s, transform .45s; }
-  .card .pic.blurred img { filter: blur(11px) saturate(.8); transform: scale(1.08); }
+  .card .pic.blurred img { filter: blur(4px); transform: scale(1.03); }
   .card .name.hidden { color: var(--ink-3); font-style: italic; }
   .buys { display: flex; gap: 6px; margin-top: 10px; }
   .buy { flex: 1; border: 1px solid var(--line); background: rgba(22,22,40,.03); border-radius: 9px; padding: 6px 6px; cursor: pointer;
@@ -186,8 +186,8 @@
     <div class="name" id="card-name"></div>
     <div class="price" id="card-price"></div>
     <div class="buys">
-      <button class="buy" id="buy-photo" type="button">Unblur photo <b>−500</b></button>
-      <button class="buy" id="buy-name" type="button">Show name <b>−500</b></button>
+      <button class="buy" id="buy-photo" type="button">Unblur photo <b>−300</b></button>
+      <button class="buy" id="buy-name" type="button">Show name <b>−300</b></button>
     </div>
   </div>
 </section>
@@ -212,9 +212,9 @@
     <h1>Product<span>Guessr</span></h1>
     <p class="lede">An AI has sorted 8,000 products into a map of seven continents, with similar things living side by side. Can you guess where each one lives?</p>
     <ol class="steps">
-      <li><b>1</b>You get a mystery product: a blurry photo and a price. Unblur it or show its name for 500 points each.</li>
+      <li><b>1</b>You get a mystery product: a blurry photo and a price. Unblur it or show its name for 300 points each.</li>
       <li><b>2</b>Drop your pin where you think it lives. The closer, the more points: up to 5,000 a round.</li>
-      <li><b>3</b>Each round strips a clue: continent names, landmarks, the legend, then the colours. Round 5 is from memory.</li>
+      <li><b>3</b>From round 3 the map loses a clue each round: first the continent names, then the landmarks, then the legend.</li>
     </ol>
     <div class="actions">
       <button class="btn" id="play-daily">Play today’s challenge</button>
@@ -245,14 +245,14 @@
 const ROUNDS = 5;
 const MAX_POINTS = 5000;
 const FALLOFF = 0.09;   // map units: points drop to 37% at this distance
-const HINT_COST = 500;
+const HINT_COST = 300;
 // Each round takes a clue away while you guess; after a guess everything comes back.
 const CLUES = [
-  { names: true,  marks: true,  colors: true,  legend: true,  label: "All clues" },
-  { names: false, marks: true,  colors: true,  legend: true,  label: "No continent names" },
-  { names: false, marks: false, colors: true,  legend: true,  label: "Colours only" },
-  { names: false, marks: false, colors: true,  legend: false, label: "No legend" },
-  { names: false, marks: false, colors: false, legend: false, label: "From memory" },
+  { names: true,  marks: true,  colors: true, legend: true,  label: "All clues" },
+  { names: true,  marks: true,  colors: true, legend: true,  label: "All clues" },
+  { names: false, marks: true,  colors: true, legend: true,  label: "No continent names" },
+  { names: false, marks: false, colors: true, legend: true,  label: "No landmarks" },
+  { names: false, marks: false, colors: true, legend: false, label: "No legend" },
 ];
 const ALL_CLUES = CLUES[0];
 const clues = () => (document.body.dataset.phase === "guess" && game) ? CLUES[Math.min(game.round, CLUES.length - 1)] : ALL_CLUES;
