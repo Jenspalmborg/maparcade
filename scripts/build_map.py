@@ -25,20 +25,17 @@ DATA = ROOT / "data"
 SITE = ROOT / "docs"
 load_dotenv(ROOT / ".env")
 
-# Top-level categories folded into a handful of colour families.
+# Top-level categories folded into a few broad continents.
 FAMILIES = [
-    ("Home & Garden", ["Home", "Patio", "Tools", "Kitchen", "Cooking", "Furniture", "Garden", "Appliances"]),
-    ("Tech", ["Electronics", "Cell Phones", "Mobile Phones", "PC", "Computers", "Camera"]),
-    ("Fashion", ["Clothing", "Accessories", "Men", "Women", "Shoes", "Jewelry", "Luggage", "Girls", "Boys"]),
-    ("Food & Drink", ["Grocery", "Food", "Beverages"]),
-    ("Beauty & Health", ["Beauty", "Health", "Personal Care"]),
-    ("Toys & Games", ["Toys", "Video Games", "Games"]),
-    ("Sports & Outdoors", ["Sports", "Outdoor", "Exercise"]),
-    ("Office & Books", ["Office", "Books", "Kindle"]),
-    ("Music & Crafts", ["Musical", "Arts", "Crafts", "Sewing"]),
-    ("Pets", ["Pet", "Cats", "Dogs"]),
-    ("Baby", ["Baby"]),
-    ("Automotive", ["Automotive", "Car"]),
+    ("Home & Kitchen", ["Home", "Patio", "Tools", "Kitchen", "Cooking", "Furniture", "Garden", "Appliances"]),
+    ("Tech & Gaming", ["Electronics", "Cell Phones", "Mobile Phones", "PC", "Computers", "Camera",
+                       "Video Games"]),
+    ("Fashion & Beauty", ["Clothing", "Accessories", "Men", "Women", "Shoes", "Jewelry", "Luggage", "Girls",
+                          "Boys", "Beauty", "Personal Care"]),
+    ("Food & Health", ["Grocery", "Food", "Beverages", "Health"]),
+    ("Sports & Outdoors", ["Sports", "Outdoor", "Exercise", "Automotive", "Car"]),
+    ("Kids & Pets", ["Toys", "Games", "Baby", "Pet", "Cats", "Dogs"]),
+    ("Hobbies & Office", ["Office", "Books", "Kindle", "Musical", "Arts", "Crafts", "Sewing"]),
 ]
 OTHER = len(FAMILIES)
 
@@ -117,6 +114,86 @@ def landmarks(items: list[dict], grid: int = 18, per_cell: int = 2) -> list[dict
     return sorted(labels, key=lambda label: -label["n"])
 
 
+def continents(items: list[dict]) -> None:
+    """Gather each broad category's islands into one continent.
+
+    The model's map is an archipelago: every department is spread over many
+    small islands. Neighbourhoods are the model's (each category keeps its own
+    arrangement, just shrunk), while the continents are placed around a circle
+    in the direction the model's map puts each category.
+    """
+    xy = np.array([[it["x"], it["y"]] for it in items])
+    fam = np.array([it["f"] for it in items])
+
+    # Uncategorised products join the continent of their nearest neighbours.
+    known = np.flatnonzero(fam != OTHER)
+    for i in np.flatnonzero(fam == OTHER):
+        d = ((xy[known] - xy[i]) ** 2).sum(1)
+        near = fam[known[np.argsort(d)[:15]]]
+        fam[i] = Counter(near.tolist()).most_common(1)[0][0]
+
+    # The biggest continent sits in the middle, the rest around it in the
+    # direction the model's map puts them, close enough for edges to touch.
+    centre = xy.mean(0)
+    sizes = Counter(fam.tolist())
+    middle = sizes.most_common(1)[0][0]
+    ring = sorted((f for f in sizes if f != middle),
+                  key=lambda f: math.atan2(*(xy[fam == f].mean(0) - centre)[::-1]))
+    targets = {middle: np.array([0.5, 0.5])}
+    for slot, f in enumerate(ring):
+        angle = slot / len(ring) * 2 * math.pi - math.pi / 2
+        targets[f] = np.array([0.5 + 0.25 * math.cos(angle), 0.5 + 0.25 * math.sin(angle)])
+    for f, target in targets.items():
+        members = fam == f
+        offset = (xy[members] - xy[members].mean(0)) * 0.42
+        # Soft edge: far-flung islands are tucked in instead of landing in a neighbour.
+        dist = np.linalg.norm(offset, axis=1, keepdims=True) + 1e-9
+        xy[members] = target + offset / dist * 0.14 * np.tanh(dist / 0.14)
+
+    # Refit to the unit square.
+    lo, span = xy.min(0), np.ptp(xy, 0).max()
+    xy = (xy - lo) / span + (1 - np.ptp(xy, 0) / span) / 2
+    for it, (x, y), f in zip(items, xy, fam):
+        it["x"], it["y"], it["f"] = round(float(x), 4), round(float(y), 4), int(f)
+
+
+def relax(items: list[dict], gap: float = 0.0068, rounds: int = 60) -> None:
+    """Spread tight clumps into even clouds, like a scatter plot you can read.
+
+    Dots closer than `gap` push each other apart, and a mild pull towards each
+    continent's centre closes the holes. Neighbours stay neighbours; only the
+    spacing evens out.
+    """
+    xy = np.array([[it["x"], it["y"]] for it in items])
+    fam = np.array([it["f"] for it in items])
+    centres = {f: xy[fam == f].mean(0) for f in set(fam.tolist())}
+    pull = np.array([centres[f] for f in fam])
+    for _ in range(rounds):
+        cells: dict[tuple[int, int], list[int]] = {}
+        for i, (x, y) in enumerate(xy):
+            cells.setdefault((int(x / gap), int(y / gap)), []).append(i)
+        push = np.zeros_like(xy)
+        for (cx, cy), members in cells.items():
+            near = [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for j in cells.get((cx + dx, cy + dy), ())]
+            if len(near) < 2:
+                continue
+            a, b = np.array(members), np.array(near)
+            d = xy[a, None, :] - xy[None, b, :]
+            dist = np.linalg.norm(d, axis=2) + 1e-9
+            overlap = np.clip(gap - dist, 0, None)
+            overlap[a[:, None] == b[None, :]] = 0
+            push[a] += (d / dist[..., None] * overlap[..., None]).sum(1) * 0.5
+        xy += push + (pull - xy) * 0.004
+
+    # A little noise so the clouds look organic rather than like a honeycomb.
+    xy += np.random.default_rng(7).normal(0, gap * 0.3, xy.shape)
+
+    lo, span = xy.min(0), np.ptp(xy, 0).max()
+    xy = (xy - lo) / span + (1 - np.ptp(xy, 0) / span) / 2
+    for it, (x, y) in zip(items, xy):
+        it["x"], it["y"] = round(float(x), 4), round(float(y), 4)
+
+
 def main() -> None:
     state = Path(sys.argv[1]) if len(sys.argv) > 1 else DATA / "productguessr.json"
     catalog_id = json.loads(state.read_text())["catalog_id"]
@@ -160,6 +237,8 @@ def main() -> None:
             "freq": freq,
         })
 
+    continents(items)
+
     # The map packs similar products onto the exact same spot. Fan each stack
     # out in a small sunflower spiral so every product gets its own dot.
     stacks: dict[tuple[int, int], list[dict]] = {}
@@ -172,21 +251,28 @@ def main() -> None:
             it["x"] = round(it["x"] + r * math.cos(k * golden), 4)
             it["y"] = round(it["y"] + r * math.sin(k * golden), 4)
 
+    relax(items)
+
     # Rounds use recognisable products: popular, with a descriptive title.
     freqs = sorted(it["freq"] for it in items)
     cutoff = freqs[len(freqs) // 3]
     pool = [
         i for i, it in enumerate(items)
-        if it["freq"] >= cutoff and len(it["name"].split()) >= 3 and it["f"] != OTHER
+        if it["freq"] >= cutoff and len(it["name"].split()) >= 3
     ]
 
     out = {
-        "families": [name for name, _ in FAMILIES] + ["Other"],
+        "families": [name for name, _ in FAMILIES],
         # Columns instead of objects keep the file small.
         "cols": ["id", "name", "img", "price", "f", "x", "y"],
         "items": [[it[c] for c in ("id", "name", "img", "price", "f", "x", "y")] for it in items],
         "pool": pool,
         "labels": landmarks(items),
+        "regions": [
+            {"t": name, "x": round(float(np.mean([it["x"] for it in items if it["f"] == f])), 4),
+             "y": round(float(np.mean([it["y"] for it in items if it["f"] == f])), 4)}
+            for f, (name, _) in enumerate(FAMILIES)
+        ],
     }
     SITE.mkdir(exist_ok=True)
     path = SITE / "data.json"

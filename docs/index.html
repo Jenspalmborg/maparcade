@@ -10,22 +10,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b0d14;
-    --panel: rgba(20, 23, 34, .86);
-    --panel-solid: #151824;
-    --line: rgba(255, 255, 255, .09);
-    --ink: #f3f4f8;
-    --ink-2: #a9aec0;
-    --ink-3: #6d7389;
-    --accent: #ffd23f;
-    --accent-ink: #1a1400;
-    --good: #57d68d;
-    --ok: #ffd23f;
-    --bad: #ff6b6b;
+    --bg: #fbfbfa;
+    --panel: rgba(255, 255, 255, .92);
+    --line: rgba(22, 22, 40, .08);
+    --ink: #17171f;
+    --ink-2: #565a6b;
+    --ink-3: #8d909e;
+    --accent: #5b2bd6;
+    --accent-ink: #ffffff;
+    --good: #2f9e57;
+    --ok: #d88a1c;
+    --bad: #d0443a;
     --display: "Bricolage Grotesque", "Inter", sans-serif;
     --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --radius: 16px;
-    color-scheme: dark;
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
@@ -37,14 +36,14 @@
   #map.dragging { cursor: grabbing !important; }
 
   .glass { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-           border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+           border-radius: var(--radius); box-shadow: 0 1px 2px rgba(22,22,40,.05), 0 10px 30px rgba(22,22,40,.09); }
 
   /* Top bar */
   header { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
            padding: 14px 18px; pointer-events: none; z-index: 5; }
   header > * { pointer-events: auto; }
   .brand { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
-  .brand-dot { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff6c9, var(--accent) 45%, #c99a00); box-shadow: 0 0 18px rgba(255,210,63,.55); }
+  .brand-dot { width: 22px; height: 22px; border-radius: 50%; background: conic-gradient(#6a35d9, #3b6fd9, #1f9aa0, #5c9e3f, #df8b3e, #c2412d, #d65db1, #6a35d9); }
   .hud { display: flex; gap: 6px; padding: 5px; }
   .hud div { padding: 4px 12px; border-radius: 10px; text-align: center; }
   .hud small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
@@ -53,7 +52,7 @@
   /* Product card */
   .card { position: fixed; top: 72px; left: 18px; width: 260px; z-index: 4; overflow: hidden; transition: opacity .25s, transform .25s; }
   .card .ask { padding: 12px 16px 10px; font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
-  .card .pic { background: #fff; height: 190px; display: grid; place-items: center; }
+  .card .pic { background: #fff; border-bottom: 1px solid var(--line); height: 190px; display: grid; place-items: center; }
   .card .pic img { max-width: 86%; max-height: 88%; object-fit: contain; }
   .card .meta { padding: 12px 16px 16px; }
   .card .name { font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -64,31 +63,31 @@
           display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(560px, calc(100% - 32px)); }
   .hint { font-size: 14px; color: var(--ink-2); padding: 8px 16px; border-radius: 999px; }
   .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 13px 28px; font-weight: 600; font-size: 16px;
-         background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 24px rgba(255,210,63,.25); transition: transform .1s, filter .15s, opacity .2s; }
+         background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 22px rgba(91,43,214,.28); transition: transform .1s, filter .15s, opacity .2s; }
   .btn:hover { filter: brightness(1.06); }
   .btn:active { transform: scale(.97); }
   .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
-  .btn.ghost { background: rgba(255,255,255,.08); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+  .btn.ghost { background: rgba(22,22,40,.04); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
 
   .result { width: 100%; padding: 18px 20px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; }
   .result .verdict { font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
   .result .pts { font-family: var(--display); font-weight: 600; font-size: 28px; font-variant-numeric: tabular-nums; text-align: right; }
   .result .sub { color: var(--ink-2); font-size: 14px; }
-  .result .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 0 4px; }
+  .result .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(22,22,40,.08); overflow: hidden; margin: 8px 0 4px; }
   .result .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
   .neighbours { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--ink-3); }
-  .neighbours img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; }
+  .neighbours img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; border: 1px solid var(--line); }
   .result .btn { grid-column: 1 / -1; margin-top: 10px; }
 
   /* Map controls and legend */
   .zoom { position: fixed; right: 18px; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 4; display: flex; flex-direction: column; overflow: hidden; }
   .zoom button { width: 40px; height: 40px; border: 0; background: none; cursor: pointer; font-size: 20px; color: var(--ink-2); }
   .zoom button + button { border-top: 1px solid var(--line); }
-  .zoom button:hover { color: var(--ink); background: rgba(255,255,255,.05); }
+  .zoom button:hover { color: var(--ink); background: rgba(22,22,40,.04); }
   .legend { position: fixed; left: 18px; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 3; padding: 10px 14px;
             display: grid; grid-template-columns: repeat(2, auto); gap: 3px 16px; font-size: 12px; color: var(--ink-2); }
   .legend span { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .legend i { width: 8px; height: 8px; border-radius: 50%; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; }
 
   .tip { position: fixed; z-index: 7; pointer-events: none; display: none; width: 200px; overflow: hidden; }
   .tip .pic { background: #fff; height: 110px; display: grid; place-items: center; }
@@ -97,14 +96,14 @@
 
   /* Overlays: intro and end */
   .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
-             background: radial-gradient(ellipse at center, rgba(11,13,20,.55), rgba(11,13,20,.92)); overflow-y: auto; }
+             background: radial-gradient(ellipse at center, rgba(251,251,250,.45), rgba(251,251,250,.9)); overflow-y: auto; }
   .modal { width: min(460px, 100%); padding: 32px 30px 28px; text-align: center; }
   .modal h1 { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -.035em; line-height: 1; margin: 6px 0 12px; }
   .modal h1 span { color: var(--accent); }
   .modal p.lede { color: var(--ink-2); margin: 0 auto 22px; max-width: 34ch; }
   .steps { text-align: left; display: grid; gap: 10px; margin: 0 0 26px; padding: 0; list-style: none; }
   .steps li { display: flex; gap: 12px; align-items: flex-start; color: var(--ink-2); font-size: 14px; }
-  .steps b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,210,63,.14); color: var(--accent);
+  .steps b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: rgba(91,43,214,.1); color: var(--accent);
              display: grid; place-items: center; font-size: 12px; }
   .modal .actions { display: flex; flex-direction: column; gap: 10px; }
   .modal .actions .btn { width: 100%; }
@@ -115,7 +114,7 @@
   .total small { font-size: 20px; color: var(--ink-3); font-weight: 600; }
   .rounds { list-style: none; padding: 0; margin: 22px 0 24px; display: grid; gap: 8px; text-align: left; }
   .rounds li { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; font-size: 14px; }
-  .rounds img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; }
+  .rounds img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; border: 1px solid var(--line); }
   .rounds span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
   .rounds b { font-variant-numeric: tabular-nums; }
   .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 18px; border-radius: 999px;
@@ -190,7 +189,7 @@
   <div class="modal glass">
     <div class="brand" style="justify-content:center"><span class="brand-dot"></span></div>
     <h1>Product<span>Guessr</span></h1>
-    <p class="lede">An AI has sorted 8,000 products into a map, with similar things living side by side. Can you guess where each one lives?</p>
+    <p class="lede">An AI has sorted 8,000 products into a map of seven continents, with similar things living side by side. Can you guess where each one lives?</p>
     <ol class="steps">
       <li><b>1</b>You get a product. Explore the map: colours are departments, labels are landmarks.</li>
       <li><b>2</b>Drop your pin where you think it lives, then hit Guess.</li>
@@ -225,8 +224,7 @@
 const ROUNDS = 5;
 const MAX_POINTS = 5000;
 const FALLOFF = 0.09;   // map units: points drop to 37% at this distance
-const COLORS = ["#f2a65a", "#5dadec", "#ef6f9c", "#f4d35e", "#c792ea", "#7bd389", "#4ecdc4",
-                "#b8c0ff", "#ff8c61", "#d4a373", "#9bf6ff", "#e76f51", "#6b7280"];
+const COLORS = ["#df8b3e", "#3b6fd9", "#d65db1", "#5c9e3f", "#1f9aa0", "#c2412d", "#6a35d9"];
 
 // ---------- State ----------
 const $ = id => document.getElementById(id);
@@ -269,7 +267,8 @@ function pickRounds(seed) {
 }
 
 // ---------- Coordinates ----------
-const base = () => Math.min(W, H) * 0.9;
+const base = () => Math.min(W * 0.9, (H - 150) * 0.94);
+const HOME_Y = () => 0.5 + 45 / base();   // nudge the map up, clear of the bottom controls
 const toScreen = (x, y) => [W / 2 + (x - view.cx) * base() * view.zoom, H / 2 + (y - view.cy) * base() * view.zoom];
 const toMap = (sx, sy) => [view.cx + (sx - W / 2) / (base() * view.zoom), view.cy + (sy - H / 2) / (base() * view.zoom)];
 
@@ -317,28 +316,49 @@ function draw(now) {
   dirty = false;
 
   ctx.clearRect(0, 0, W, H);
+  // Faint dot grid, fixed to the map so it moves with you.
+  const g = base() * view.zoom * 0.025, gs = g < 14 ? g * Math.ceil(14 / g) : g;
+  ctx.fillStyle = "rgba(22,22,40,.09)";
+  for (let gx = ((W / 2 - view.cx * base() * view.zoom) % gs + gs) % gs; gx < W; gx += gs)
+    for (let gy = ((H / 2 - view.cy * base() * view.zoom) % gs + gs) % gs; gy < H; gy += gs) ctx.fillRect(gx - .75, gy - .75, 1.5, 1.5);
   const phase = document.body.dataset.phase;
   const answer = (phase === "reveal") ? item(game.picks[game.round]) : null;
 
   // Points
-  // Additive blending: where products pile up, the map glows brighter.
-  const r = Math.max(1.6, Math.min(5, 1.7 * Math.sqrt(view.zoom)));
+  // Round dots; bigger as you zoom in.
+  const r = Math.max(1.8, Math.min(7, 1.8 * Math.sqrt(view.zoom)));
   const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k;
-  ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = answer ? 0.35 : 0.6;
+  ctx.globalAlpha = answer ? 0.28 : 0.82;
   byFamily.forEach((idxs, f) => {
     ctx.fillStyle = COLORS[f];
+    ctx.beginPath();
     for (const i of idxs) {
       const row = D.items[i], sx = ox + row[5] * k, sy = oy + row[6] * k;
-      if (sx < -5 || sy < -5 || sx > W + 5 || sy > H + 5) continue;
-      ctx.fillRect(sx - r / 2, sy - r / 2, r, r);
+      if (sx < -8 || sy < -8 || sx > W + 8 || sy > H + 8) continue;
+      ctx.moveTo(sx + r, sy); ctx.arc(sx, sy, r, 0, Math.PI * 2);
     }
+    ctx.fill();
   });
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
+
+  // Continent names when zoomed out; they fade as landmarks take over.
+  const boxes = [];
+  const regionAlpha = Math.max(0, Math.min(1, (2.4 - view.zoom) / 1.2));
+  if (regionAlpha > 0) {
+    ctx.font = "800 17px 'Bricolage Grotesque', Inter, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    D.regions.forEach((reg, f) => {
+      const [sx, sy] = toScreen(reg.x, reg.y), w = ctx.measureText(reg.t).width + 16;
+      boxes.push([sx - w / 2, sy - 13, w, 26]);
+      ctx.globalAlpha = regionAlpha;
+      ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(251,251,250,.92)"; ctx.strokeText(reg.t, sx, sy);
+      ctx.fillStyle = COLORS[f]; ctx.fillText(reg.t, sx, sy);
+    });
+    ctx.globalAlpha = 1;
+  }
 
   // Landmarks: more appear as you zoom in; skip any that would overlap.
-  const boxes = [], limit = Math.round(30 + view.zoom * 30);
+  const limit = view.zoom < 1.3 ? 14 : Math.round(20 + view.zoom * 28);
   ctx.font = "600 11px Inter, sans-serif";
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   for (let i = 0; i < Math.min(limit, D.labels.length); i++) {
@@ -347,8 +367,8 @@ function draw(now) {
     const text = l.t.toUpperCase(), w = ctx.measureText(text).width + 10, box = [sx - w / 2, sy - 9, w, 18];
     if (boxes.some(b => box[0] < b[0] + b[2] && box[0] + box[2] > b[0] && box[1] < b[1] + b[3] && box[1] + box[3] > b[1])) continue;
     boxes.push(box);
-    ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(11,13,20,.85)"; ctx.strokeText(text, sx, sy);
-    ctx.fillStyle = "rgba(243,244,248,.78)"; ctx.fillText(text, sx, sy);
+    ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(251,251,250,.9)"; ctx.strokeText(text, sx, sy);
+    ctx.fillStyle = "rgba(23,23,31,.62)"; ctx.fillText(text, sx, sy);
   }
 
   // Reveal: line from guess to answer, then the answer marker.
@@ -357,14 +377,15 @@ function draw(now) {
     const [ax, ay] = toScreen(answer.x, answer.y);
     const t = anim === null ? 1 : Math.min(1, (now - anim) / 700);
     if (t === 1) anim = null;
-    ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(23,23,31,.55)";
     ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + (ax - gx) * t, gy + (ay - gy) * t); ctx.stroke(); ctx.setLineDash([]);
     if (t === 1) {
       const pulse = (now / 900) % 1;
       ctx.beginPath(); ctx.arc(ax, ay, 10 + pulse * 22, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255,210,63,${0.7 * (1 - pulse)})`; ctx.lineWidth = 2; ctx.stroke();
+      ctx.globalAlpha = 0.8 * (1 - pulse); ctx.strokeStyle = COLORS[answer.f]; ctx.lineWidth = 2.5; ctx.stroke(); ctx.globalAlpha = 1;
       ctx.beginPath(); ctx.arc(ax, ay, 9, 0, Math.PI * 2);
       ctx.fillStyle = COLORS[answer.f]; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+      ctx.beginPath(); ctx.arc(ax, ay, 10.5, 0, Math.PI * 2); ctx.lineWidth = 1; ctx.strokeStyle = "rgba(23,23,31,.35)"; ctx.stroke();
       dirty = true;
     }
   }
@@ -376,17 +397,17 @@ function draw(now) {
   // Hover highlight
   if (hover >= 0) {
     const [hx, hy] = toScreen(D.items[hover][5], D.items[hover][6]);
-    ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy, r + 3, 0, Math.PI * 2); ctx.strokeStyle = "#17171f"; ctx.lineWidth = 2; ctx.stroke();
   }
   requestAnimationFrame(draw);
 }
 
 function drawPin(x, y) {
   ctx.save(); ctx.translate(x, y);
-  ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 8;
+  ctx.shadowColor = "rgba(22,22,40,.35)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-11, -14, -11, -30, 0, -30); ctx.bezierCurveTo(11, -30, 11, -14, 0, 0);
-  ctx.fillStyle = "#fff"; ctx.fill(); ctx.shadowBlur = 0;
-  ctx.beginPath(); ctx.arc(0, -20, 4.5, 0, Math.PI * 2); ctx.fillStyle = "#0b0d14"; ctx.fill();
+  ctx.fillStyle = "#17171f"; ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  ctx.beginPath(); ctx.arc(0, -20, 4.5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
   ctx.restore();
 }
 
@@ -456,7 +477,7 @@ canvas.addEventListener("pointerleave", hideTip);
 
 $("zin").onclick = () => zoomAt(W / 2, H / 2, 1.6);
 $("zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.6);
-$("zfit").onclick = () => flyTo(.5, .5, 1, 500);
+$("zfit").onclick = () => flyTo(.5, HOME_Y(), 1, 500);
 
 // ---------- Game flow ----------
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -481,7 +502,7 @@ function nextRound() {
   $("score").textContent = fmt(game.scores.reduce((a, b) => a + b, 0));
   $("result").hidden = true; $("guess").hidden = false; $("guess").disabled = true; $("hint").hidden = false;
   setPhase("guess");
-  flyTo(.5, .5, 1, 500);
+  flyTo(.5, HOME_Y(), 1, 500);
 }
 
 function verdict(pts) {

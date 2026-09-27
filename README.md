@@ -1,6 +1,6 @@
 # ProductGuessr
 
-GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side. You get a product, drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Five rounds, a daily challenge, and a shareable result.
+GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a product, drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Five rounds, a daily challenge, and a shareable result.
 
 ![Where on the map is the phone mount?](docs/screenshots/guess.png)
 
@@ -51,13 +51,17 @@ uv run python scripts/build_map.py          # fetch the map, write docs/data.jso
 
 1. **Harvest.** The pre-embedded catalogs have no map (`umap` returns a server error for them), so [`harvest.py`](scripts/harvest.py) copies products into a catalog of our own. It runs 150 searches across everyday shopping areas plus the popularity ranking, and drops near-identical variants ("Nike Men's Retro" × 20), which would otherwise pile onto one spot and make rounds repetitive.
 2. **Embed.** The API returns every field as a string (`"None"`, `"[1, 2, 3]"`), so [`embed.py`](scripts/embed.py) converts each column back to the types in the [catalog format](https://github.com/Unbox-AI/behaviorgpt/blob/main/docs/catalog-format.md) before uploading. Each API key holds one catalog: a new upload replaces the previous one under the same id.
-3. **Map.** [`build_map.py`](scripts/build_map.py) pulls the coordinates out of the `umap` page, as [aic-artworks](https://github.com/Unbox-AI/aic-artworks) does. The model packs similar products onto the exact same point (8,409 products on ~1,900 spots), so each stack is fanned out in a tiny sunflower spiral to give every product its own dot.
-4. **Landmarks.** For each region of the map, the word that is far more common there than elsewhere ("espresso", "mattress", "iphone") becomes a label, so players can find their way.
-5. **Game.** [`docs/index.html`](docs/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking.
+3. **Map.** [`build_map.py`](scripts/build_map.py) pulls the coordinates out of the `umap` page, as [aic-artworks](https://github.com/Unbox-AI/aic-artworks) does.
+4. **Continents.** The raw map is an archipelago (see below), which reads as confetti. So the categories are folded into seven broad groups, and each group's islands are gathered into one continent: the model's arrangement within a group is kept, shrunk, with far-flung islands tucked in. The biggest continent sits in the middle and the others around it, in the direction the model's map puts them. Products with no category join the group of their nearest neighbours on the model's map.
+5. **Even clouds.** The model packs similar products onto the exact same point (8,409 products on ~1,900 spots). Dots that overlap push each other apart, a mild pull keeps each continent together, and a little noise makes it look organic. Neighbours stay neighbours; only the spacing changes.
+6. **Landmarks.** For each region of the map, the word that is far more common there than elsewhere ("espresso", "mattress", "iphone") becomes a label, so players can find their way.
+7. **Game.** [`docs/index.html`](docs/index.html) draws the map on a canvas with pan, zoom and pinch. Scoring is `5000 × e^(−distance / 0.09)` in map units. Rounds are drawn with a seeded RNG, from popular products with descriptive titles, spread over different departments. Hovering over products only works after you guess, so no peeking.
 
 ## What the map looks like up close
 
-Locally the map is very good: 82% of each product's ten nearest neighbours are from the same department (13% by chance), and the neighbours are the kind of thing you'd expect (phone mounts next to phone mounts, pasta next to ravioli). Globally it is an archipelago rather than continents: each department is spread over many small islands. That is what makes it a game. Knowing a phone mount is "Tech" isn't enough; you have to find the phone-accessory island.
+Locally the map is very good: 82% of each product's ten nearest neighbours are from the same department (13% by chance), and the neighbours are the kind of thing you'd expect (phone mounts next to phone mounts, pasta next to ravioli). Globally it is an archipelago rather than continents: each department is spread over many small islands, interleaved with the others.
+
+So be clear about what the game's map is: **within a continent, positions come from BehaviorGPT; which continent sits next to which is my layout**, guided by the model's map but not measured by it. Knowing a phone mount is "Tech & Gaming" gets you to the right continent; finding the phone-accessory corner of it is where the points are.
 
 ![Final score with a shareable result](docs/screenshots/score.png)
 
