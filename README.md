@@ -20,7 +20,9 @@ It is a small, complete example of building on the BehaviorGPT SDK's embedding m
 
 ## MapGolf
 
-Each turn offers six shots, all taken from `client.similar_products()` for the product you are on: two **putters** (the 1st and 2nd most similar products), two **irons** (10th and 18th) and two **drivers** (40th and 56th). A hole is 4–6 shots long on the best route, par is one more, and after every shot you see how many shots remain at best, found by a breadth-first search backwards from the flag. Mulligans undo a shot but the stroke counts. The map only draws where you are; moves follow the model's similarity ranking.
+Each turn offers three shots, all taken from `client.similar_products()` for the product your ball is on: a **chip** (one of the 4 most similar products), an **iron** (ranks 9–18) and a **driver** (ranks 25–36). Pick the one that feels closest to the pin and the game tells you how it went: "WOW, what a drive! 420 m closer" or "Well, that was a duffer. 260 m the wrong way."
+
+The distance to the pin counts the steps left along the model's links (250 m each, found by a breadth-first search backwards from the pin), plus map distance to break ties. To keep it friendly, two of the three shots get you closer whenever the links allow it, and the pin shows up as a shot once it is in reach. Holes are 3–4 steps on the best route, par is two more. In simulation, a player who picks a good shot 75% of the time averages about par; clicking at random rarely finishes.
 
 ## What it shows
 
@@ -30,7 +32,7 @@ Each turn offers six shots, all taken from `client.similar_products()` for the p
 | Your own catalog to map | `client.embed(parquet)` |
 | The map itself | `client.umap(catalog_id=...)`, coordinates parsed out of the Plotly page |
 | "It lives next to…" after each guess | the product's nearest neighbours on that map |
-| MapGolf's shots | `client.similar_products(id, limit=60)` for all 8,409 products |
+| MapGolf's shots | `client.similar_products(id, limit=60)` for all 8,409 products (top 36 kept) |
 
 ![The reveal: your pin, the answer and its neighbours](docs/screenshots/reveal.png)
 
@@ -61,7 +63,7 @@ uv run python scripts/embed.py --sample 300 # optional: quick test upload first
 uv run python scripts/embed.py              # upload and embed them (a few minutes)
 uv run python scripts/build_map.py          # fetch the map, write docs/data.json
 uv run python scripts/neighbours.py         # similar products for MapGolf (~5 min, resumable)
-uv run python scripts/build_golf.py         # clubs -> docs/golf.json, plus a connectivity check
+uv run python scripts/build_golf.py         # links -> docs/golf.json, plus a connectivity check
 ```
 
 ## How it was built
@@ -90,13 +92,13 @@ scripts/
   embed.py        products -> data/productguessr.parquet -> embedded catalog
   build_map.py    umap page -> docs/data.json (points, landmarks, round pool)
   neighbours.py   similar_products for every product -> data/neighbours.jsonl
-  build_golf.py   neighbours -> docs/golf.json (six clubs per product)
+  build_golf.py   neighbours -> docs/golf.json (36 most similar per product)
 docs/
   index.html      start page: pick a game
   guessr/         ProductGuessr (no build step)
   golf/           MapGolf (no build step)
   data.json       the built map, shared by both games
-  golf.json       MapGolf's clubs
+  golf.json       MapGolf's links between products
   screenshots/    README images
 data/             harvested products, parquet, catalog id (git-ignored)
 ```
