@@ -2,6 +2,8 @@
 
 GeoGuessr, but for products. [BehaviorGPT](https://github.com/Unbox-AI/behaviorgpt) has placed 8,409 products on a map where similar things live side by side, grouped into seven continents. You get a mystery product (a blurred photo and a price), drop a pin where you think it lives, and score up to 5,000 points depending on how close you land. Unblurring the photo or showing the name costs 300 points each. From round 3 the map loses a clue each round: first the continent names, then the landmarks, then the legend. Five rounds, a daily challenge, and a shareable result.
 
+**[▶ Play it here](https://jenspalmborg.github.io/productguessr/)**
+
 ![Where on the map is the phone mount?](docs/screenshots/guess.png)
 
 It is a small, complete example of building on the BehaviorGPT SDK's embedding map: harvesting products, embedding them as your own catalog, pulling coordinates out of `client.umap()`, and turning them into a game that runs without an API key.
