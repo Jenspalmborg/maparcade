@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MapGolf</title>
-<meta name="description" content="Get from one product to the pin in as few shots as possible. Every shot lands on a product BehaviorGPT thinks is similar.">
+<meta name="description" content="Get your ball from one product to the pin in as few shots as possible. Every shot lands on a product BehaviorGPT thinks is similar.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #fbfbfa; --surface: #ffffff; --line: rgba(22, 22, 40, .08);
+    --bg: #f6f8f3; --surface: #ffffff; --line: rgba(22, 22, 40, .08);
     --ink: #17171f; --ink-2: #565a6b; --ink-3: #8d909e;
     --green: #2f8f4e; --green-soft: rgba(47, 143, 78, .1); --flag: #e0453a;
     --good: #2f9e57; --bad: #d0443a;
@@ -19,88 +19,88 @@
     color-scheme: light;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
   button { font: inherit; color: inherit; }
   [hidden] { display: none !important; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
 
-  .app { display: grid; grid-template-columns: 1fr 440px; height: 100dvh; }
-  .mapwrap { position: relative; min-width: 0; }
-  #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  header { position: absolute; top: 0; left: 0; right: 0; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
-  header > * { pointer-events: auto; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 12px; }
   a.brand { color: inherit; text-decoration: none; font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
   .flagicon { width: 22px; height: 22px; }
-  .hud { display: flex; gap: 4px; padding: 5px; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 14px;
-         box-shadow: 0 1px 2px rgba(22,22,40,.05), 0 8px 24px rgba(22,22,40,.07); }
-  .hud div { padding: 3px 12px; text-align: center; }
+  .hud { display: flex; gap: 4px; padding: 5px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  .hud div { padding: 2px 12px; text-align: center; }
   .hud small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
   .hud b { font-family: var(--display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* Side panel */
-  .panel { background: var(--surface); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
-  .scroll { overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
-  .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
-  .prod { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; }
-  .prod img { width: 56px; height: 56px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
-  .prod .n { font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .goal { background: #fff5f4; border: 1px solid rgba(224,69,58,.18); border-radius: 14px; padding: 12px; }
-  .goal .label { color: var(--flag); }
+  /* The hole, side view */
+  .course { position: relative; border-radius: 20px; overflow: hidden; background: #eaf4fb; border: 1px solid var(--line);
+            box-shadow: 0 1px 2px rgba(22,22,40,.05), 0 10px 30px rgba(22,22,40,.07); }
+  #course { display: block; width: 100%; height: 250px; }
+  .badges { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
+  .pinbadge { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,.94);
+              border: 1px solid rgba(224,69,58,.25); border-radius: 14px; padding: 8px 12px 8px 8px; max-width: 58%; box-shadow: 0 6px 18px rgba(22,22,40,.08); }
+  .pinbadge img { width: 52px; height: 52px; object-fit: contain; background: #fff; border-radius: 8px; flex: none; }
+  .pinbadge small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--flag); }
+  .pinbadge b { display: block; font-weight: 600; line-height: 1.25; font-size: 14px; }
+  .ballbadge { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,.94);
+               border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px 6px 6px; max-width: 40%; }
+  .ballbadge img { width: 34px; height: 34px; object-fit: contain; background: #fff; border-radius: 6px; flex: none; }
+  .ballbadge small { display: block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .ballbadge b { display: block; font-weight: 500; font-size: 13px; line-height: 1.2; }
 
-  .ball { border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-  .ball .prod { grid-template-columns: 44px 1fr; }
-  .ball .prod img { width: 44px; height: 44px; }
-  .ball .prod .n { font-size: 13px; color: var(--ink-2); }
-  .togo { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-  .togo b { font-family: var(--display); font-size: 38px; font-weight: 800; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-  .togo span { color: var(--ink-2); }
-
-  .say { border-radius: 14px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
-  .say .e { font-size: 30px; line-height: 1; }
-  .say b { display: block; font-family: var(--display); font-weight: 800; font-size: 19px; letter-spacing: -.01em; line-height: 1.2; }
-  .say span { font-size: 14px; color: var(--ink-2); }
-  .say.good { background: rgba(47,158,87,.1); } .say.good b { color: var(--good); }
-  .say.bad { background: rgba(208,68,58,.08); } .say.bad b { color: var(--bad); }
+  .say { margin: 16px 0 0; border-radius: 16px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; animation: pop .4s cubic-bezier(.2,1.4,.4,1); }
+  .say .e { font-size: 34px; line-height: 1; }
+  .say b { display: block; font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -.01em; line-height: 1.2; }
+  .say span { font-size: 14.5px; color: var(--ink-2); }
+  .say.good { background: rgba(47,158,87,.11); } .say.good b { color: var(--good); }
+  .say.bad { background: rgba(208,68,58,.09); } .say.bad b { color: var(--bad); }
   .say.meh { background: rgba(22,22,40,.05); }
-  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } }
 
-  .shots { display: grid; gap: 8px; }
-  .shot { display: grid; grid-template-columns: 74px 56px 1fr; gap: 12px; align-items: center; text-align: left; cursor: pointer; background: #fff;
-          border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px 8px 8px; transition: border-color .12s, background .12s, transform .08s; }
-  .shot:hover, .shot:focus-visible { border-color: var(--green); background: var(--green-soft); outline: none; }
+  .ask { display: flex; justify-content: space-between; align-items: baseline; margin: 20px 0 10px; }
+  .ask h2 { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.01em; margin: 0; }
+  .ask span { color: var(--ink-3); font-size: 13px; }
+  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .shot { display: flex; flex-direction: column; text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--line);
+          border-radius: 16px; overflow: hidden; padding: 0; transition: transform .15s, box-shadow .15s, border-color .15s;
+          box-shadow: 0 1px 2px rgba(22,22,40,.04); }
+  .shot:hover, .shot:focus-visible { transform: translateY(-3px); border-color: var(--green); box-shadow: 0 12px 28px rgba(22,22,40,.1); outline: none; }
   .shot:active { transform: scale(.98); }
-  .club { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: rgba(22,22,40,.04);
-          border-radius: 10px; padding: 8px 4px; height: 100%; }
-  .club b { font-family: var(--display); font-weight: 800; font-size: 15px; }
-  .club small { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-  .shot img { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 8px; }
-  .shot span { font-size: 13.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .shot.pin { border-color: var(--flag); background: #fff5f4; }
-  .shot.pin .club { background: rgba(224,69,58,.12); color: var(--flag); }
+  .shot:disabled { pointer-events: none; opacity: .5; }
+  .club { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .club b { font-family: var(--display); font-weight: 800; font-size: 16px; }
+  .club small { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+  .club kbd { font: 600 11px var(--sans); color: var(--ink-3); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; margin-left: 6px; }
+  .shot .pic { height: 150px; display: grid; place-items: center; background: #fff; overflow: hidden; }
+  .shot .pic img { max-width: 80%; max-height: 126px; width: auto; height: auto; object-fit: contain; }
+  .shot .nm { padding: 10px 14px 14px; font-weight: 600; line-height: 1.3; min-height: 3.1em; }
+  .shot.pin { border-color: var(--flag); }
+  .shot.pin .club { background: #fff5f4; } .shot.pin .club b { color: var(--flag); }
 
-  .foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  .foot { display: flex; justify-content: center; padding: 22px 0 40px; }
+  .link { background: none; border: 0; color: var(--ink-3); cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+
   .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 12px 22px; font-weight: 600; font-size: 15px; background: var(--green); color: #fff;
          box-shadow: 0 8px 22px rgba(47,143,78,.25); transition: filter .15s, transform .1s; text-decoration: none; text-align: center; }
   .btn:hover { filter: brightness(1.06); } .btn:active { transform: scale(.98); }
   .btn.ghost { background: rgba(22,22,40,.04); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
-  .btn.small { padding: 8px 14px; font-size: 13px; flex: 1; }
 
   /* Overlays */
   .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; overflow-y: auto;
-             background: radial-gradient(ellipse at center, rgba(251,251,250,.5), rgba(251,251,250,.92)); }
+             background: radial-gradient(ellipse at center, rgba(246,248,243,.55), rgba(246,248,243,.93)); }
   .modal { width: min(480px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 30px 28px 26px; text-align: center;
            box-shadow: 0 2px 4px rgba(22,22,40,.05), 0 24px 60px rgba(22,22,40,.14); }
   .modal h1 { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -.035em; line-height: 1; margin: 8px 0 12px; }
   .modal h1 span { color: var(--green); }
   .modal h2 { font-family: var(--display); font-weight: 800; font-size: 34px; letter-spacing: -.03em; margin: 4px 0 6px; }
-  .modal .label { text-align: center; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
   .lede { color: var(--ink-2); margin: 0 auto 20px; max-width: 36ch; text-wrap: balance; }
   .steps { text-align: left; display: grid; gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
   .steps li { display: flex; gap: 12px; color: var(--ink-2); font-size: 14px; }
   .steps b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-size: 12px; }
   .actions { display: flex; flex-direction: column; gap: 10px; }
   .path { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 0 20px; }
-  .path img { width: 42px; height: 42px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .path img { width: 44px; height: 44px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
   .path .arrow { color: var(--ink-3); align-self: center; font-size: 12px; }
   .path img.start { border-color: var(--ink); } .path img.end { border-color: var(--flag); }
   .card { width: 100%; border-collapse: collapse; margin: 16px 0 22px; font-variant-numeric: tabular-nums; }
@@ -115,19 +115,24 @@
   .toast.show { opacity: 1; }
   .loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--ink-3); z-index: 30; background: var(--bg); }
 
-  @media (max-width: 860px) {
-    body { overflow: auto; }
-    .app { grid-template-columns: 1fr; grid-template-rows: 34dvh auto; height: auto; min-height: 100dvh; }
-    .panel { border-left: 0; border-top: 1px solid var(--line); }
-    .scroll { overflow: visible; padding: 14px; gap: 12px; }
-    .foot { padding: 10px 14px max(12px, env(safe-area-inset-bottom)); }
-    header { padding: 10px 12px; }
+  @media (max-width: 700px) {
+    .wrap { padding: 0 12px; }
+    header { padding: 10px 0 8px; }
     a.brand { font-size: 17px; }
-    .togo b { font-size: 32px; }
-    .shot { grid-template-columns: 64px 48px 1fr; gap: 10px; }
-    .shot img { width: 48px; height: 48px; }
-    .modal { padding: 24px 18px 20px; }
-    .modal h1 { font-size: 36px; }
+    .hud div { padding: 2px 8px; }
+    #course { height: 170px; }
+    .badges { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px; background: #fff; border-top: 1px solid var(--line); }
+    .pinbadge, .ballbadge { max-width: none; padding: 6px; box-shadow: none; gap: 8px; }
+    .pinbadge img, .ballbadge img { width: 36px; height: 36px; }
+    .pinbadge b, .ballbadge b { font-size: 12.5px; }
+    .say { padding: 12px; } .say .e { font-size: 28px; } .say b { font-size: 18px; } .say span { font-size: 13.5px; }
+    .ask { margin: 14px 0 8px; } .ask span { display: none; }
+    .shots { gap: 8px; }
+    .club { padding: 7px 8px; flex-direction: column; align-items: flex-start; gap: 0; } .club kbd { display: none; }
+    .club b { font-size: 14px; } .club small { font-size: 11px; }
+    .shot .pic { height: 92px; overflow: hidden; } .shot .pic img { max-height: 80px; }
+    .shot .nm { padding: 7px 8px 10px; font-size: 12.5px; }
+    .modal { padding: 24px 18px 20px; } .modal h1 { font-size: 36px; }
   }
 </style>
 </head>
@@ -137,39 +142,30 @@
   <symbol id="flag" viewBox="0 0 24 24"><path d="M6 21V3" stroke="#17171f" stroke-width="2" stroke-linecap="round"/><path d="M6 3l12 4.5L6 12z" fill="#e0453a"/></symbol>
 </svg>
 
-<div class="app">
-  <div class="mapwrap">
-    <canvas id="map" aria-label="Map with your ball, your path and the pin"></canvas>
-    <header>
-      <a class="brand" href="../" title="All games"><svg class="flagicon"><use href="#flag"/></svg>MapGolf</a>
-      <div class="hud" id="hud" hidden>
-        <div><small>Hole</small><b id="hole">1 / 3</b></div>
-        <div><small>Par</small><b id="par">5</b></div>
-        <div><small>Strokes</small><b id="strokes">0</b></div>
-      </div>
-    </header>
-  </div>
+<div class="wrap">
+  <header>
+    <a class="brand" href="../" title="All games"><svg class="flagicon"><use href="#flag"/></svg>MapGolf</a>
+    <div class="hud" id="hud" hidden>
+      <div><small>Hole</small><b id="hole">1 / 3</b></div>
+      <div><small>Par</small><b id="par">4</b></div>
+      <div><small>Strokes</small><b id="strokes">0</b></div>
+    </div>
+  </header>
 
-  <aside class="panel">
-    <div class="scroll">
-      <section class="goal">
-        <div class="label">⛳ The pin</div>
-        <div class="prod" id="goal"></div>
-      </section>
-      <section class="ball">
-        <div class="togo"><b id="togo">–</b><span>to the pin</span></div>
-        <div class="prod" id="here"></div>
-      </section>
-      <div id="say"></div>
-      <section>
-        <div class="label">Pick your shot</div>
-        <div class="shots" id="shots"></div>
-      </section>
+  <section class="course">
+    <canvas id="course" aria-label="Side view of the hole: tee, your ball and the green"></canvas>
+    <div class="badges">
+    <div class="ballbadge" id="ballbadge" hidden><img id="ball-img" alt=""><div><small>Your ball is on</small><b id="ball-name"></b></div></div>
+    <div class="pinbadge" id="pinbadge" hidden><img id="pin-img" alt=""><div><small>⛳ The pin</small><b id="pin-name"></b></div></div>
     </div>
-    <div class="foot">
-      <button class="btn ghost small" id="giveup">Pick up the ball (par +3)</button>
-    </div>
-  </aside>
+  </section>
+
+  <div id="say"></div>
+
+  <div class="ask"><h2>Pick your shot</h2><span>Which one is closest to the pin? Keys 1–3 work too.</span></div>
+  <div class="shots" id="shots"></div>
+
+  <div class="foot"><button class="link" id="giveup">Pick up the ball (counts as par +3)</button></div>
 </div>
 
 <div class="overlay" id="intro" hidden>
@@ -178,15 +174,15 @@
     <h1>Map<span>Golf</span></h1>
     <p class="lede">Get your ball from one product to the pin in as few shots as you can.</p>
     <ol class="steps">
-      <li><b>1</b>Every turn you get three shots: a chip, an iron and a driver. Each one lands on a product the AI thinks is similar to where your ball is.</li>
-      <li><b>2</b>Chips are safe and short. Drivers fly far, but not always the right way.</li>
-      <li><b>3</b>Pick the product that feels closest to the pin. Three holes, each with a par.</li>
+      <li><b>1</b>Every shot lands on a product. You get three to choose from: a chip, an iron and a driver.</li>
+      <li><b>2</b>Pick the one that feels closest to the pin. Belts are closer to jeans than smartwatches are.</li>
+      <li><b>3</b>Good picks fly toward the green; bad ones go backwards. Three holes, par 4 or 5.</li>
     </ol>
     <div class="actions">
       <button class="btn" id="play-daily">Play today’s course</button>
       <button class="btn ghost" id="play-random">Random course</button>
     </div>
-    <p class="fine"><a href="../">← All games</a></p>
+    <p class="fine">Links between products come from <a href="https://github.com/Unbox-AI/behaviorgpt">BehaviorGPT</a>, a model of what shoppers look at together. <a href="../">← All games</a></p>
   </div>
 </div>
 
@@ -218,23 +214,30 @@
 
 <script>
 const HOLES = 3;
-const M_PER_HOP = 250;           // one good shot along the model's links ≈ 250 m
+const M_PER_STEP = 200;          // one good shot along the model's links ≈ 200 m
 // Three clubs, each drawn from a band of BehaviorGPT's similarity ranking for the ball's product.
 const CLUBS = [
-  { name: "Chip",   carry: "~100 m",  band: [0, 4],   verb: "chip" },
-  { name: "Iron",   carry: "~500 m",  band: [8, 18],  verb: "iron shot" },
-  { name: "Driver", carry: "~1000 m", band: [24, 36], verb: "drive" },
+  { name: "Chip",   carry: "short",  band: [0, 4],   verb: "chip" },
+  { name: "Iron",   carry: "medium", band: [8, 18],  verb: "iron shot" },
+  { name: "Driver", carry: "long",   band: [24, 36], verb: "drive" },
 ];
-const COLORS = ["#df8b3e", "#3b6fd9", "#d65db1", "#5c9e3f", "#1f9aa0", "#c2412d", "#6a35d9"];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const short = (s, n = 80) => s.length > n ? s.slice(0, n - 1) + "…" : s;
 let D, NEAR, reverse;
 let game = null, hole = null;
-const canvas = $("map"), ctx = canvas.getContext("2d");
-let W = 0, H = 0, flight = null;
-const view = { cx: .5, cy: .5, zoom: 1 };
+
+// Amazon-style titles are long. Keep the part before the first separator and drop
+// model numbers, so "Fossil Men's Gen 5E 44mm Stainless Steel Smartwatch with Alexa, …"
+// reads as "Fossil Men's Stainless Steel Smartwatch".
+function shortName(i) {
+  let s = D.items[i][1].split(/,| - | – | \| |\(|\[| with | for | featuring /i)[0].trim();
+  const words = s.split(/\s+/), clean = words.filter(w => !/\d/.test(w) || /^\d+(st|nd|rd|th)$/i.test(w));
+  const keep = clean.length >= 2 ? clean : words;
+  s = keep.slice(0, 6).join(" ");
+  return s.length > 48 ? s.slice(0, 47) + "…" : s;
+}
+const family = i => D.families[D.items[i][4]];
 
 function rng(seed) {
   let h = 1779033703 ^ seed.length;
@@ -242,34 +245,33 @@ function rng(seed) {
   return () => { h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
 }
 
-// Hops from every product to the pin, searching backwards along the model's links.
-function hopsTo(goal) {
+// Steps from every product to the pin, searching backwards along the model's links.
+function stepsTo(goal) {
   const dist = new Int16Array(NEAR.length).fill(-1);
   dist[goal] = 0;
   const queue = [goal];
   for (let q = 0; q < queue.length; q++) for (const u of reverse[queue[q]]) if (dist[u] < 0) { dist[u] = dist[queue[q]] + 1; queue.push(u); }
   return dist;
 }
-const pos = i => [D.items[i][5], D.items[i][6]];
 
-// Metres to the pin: hops along the model's links, with map distance breaking ties.
+// Metres to the pin: steps left along the model's links, with map distance breaking ties.
 function metres(i) {
   if (i === hole.goal) return 0;
-  const h = hole.dist[i];
-  if (h < 0) return null;
-  const [x, y] = pos(i), [gx, gy] = pos(hole.goal);
-  return Math.round(((h - 1) * M_PER_HOP + 80 + Math.hypot(x - gx, y - gy) * 700) / 10) * 10;
+  const s = hole.dist[i];
+  if (s < 0) return null;
+  const [x, y] = [D.items[i][5], D.items[i][6]], [gx, gy] = [D.items[hole.goal][5], D.items[hole.goal][6]];
+  return Math.round(((s - 1) * M_PER_STEP + 60 + Math.min(1, Math.hypot(x - gx, y - gy) * 2) * 120) / 10) * 10;
 }
 
 function makeCourse(seed) {
-  const rand = rng("golf2:" + seed), holes = [], used = new Set();
+  const rand = rng("golf3:" + seed), holes = [], used = new Set();
   const pool = D.pool.filter(i => NEAR[i].length >= 30);
   for (let h = 0; h < HOLES; h++) {
     for (let tries = 0; tries < 200; tries++) {
-      const goal = pool[Math.floor(rand() * pool.length)], dist = hopsTo(goal), fam = D.items[goal][4];
+      const goal = pool[Math.floor(rand() * pool.length)], dist = stepsTo(goal), fam = D.items[goal][4];
       if (used.has(fam) && tries < 100) continue;
-      let starts = pool.filter(i => dist[i] >= 3 && dist[i] <= 4 && D.items[i][4] !== fam);
-      if (!starts.length) starts = pool.filter(i => dist[i] >= 3 && dist[i] <= 5);
+      let starts = pool.filter(i => dist[i] >= 2 && dist[i] <= 3 && D.items[i][4] !== fam);
+      if (!starts.length) starts = pool.filter(i => dist[i] >= 2 && dist[i] <= 4);
       if (!starts.length) continue;
       const start = starts[Math.floor(rand() * starts.length)];
       used.add(fam);
@@ -280,20 +282,18 @@ function makeCourse(seed) {
   return holes;
 }
 
-// The three shots on offer, one per club, drawn from that club's band of the ranking.
-// To keep it friendly, two of the three get you closer whenever the links allow it,
-// and the pin itself shows up once it is in reach.
+// The three shots on offer, one per club. Two of the three get you closer whenever the
+// links allow it, and the pin itself shows up once it is in reach.
 function offer() {
   const cur = hole.path.at(-1), links = NEAR[cur], rand = rng(`${game.seed}:${game.hole}:${hole.strokes}:${cur}`);
   const pickFrom = ([a, b], avoid) => {
-    const c = links.slice(a, b).filter(j => j !== cur && !avoid.includes(j));
+    const c = links.slice(a, b).filter(j => j !== cur && !avoid.includes(j) && !hole.path.includes(j));
     return c.length ? c[Math.floor(rand() * c.length)] : null;
   };
   const shots = [];
   CLUBS.forEach(c => shots.push(pickFrom(c.band, shots) ?? pickFrom([0, links.length], shots)));
   const closer = j => j != null && hole.dist[j] >= 0 && hole.dist[j] < hole.dist[cur];
   const bandOf = rank => rank < 6 ? 0 : rank < 21 ? 1 : 2;
-
   const pinRank = links.indexOf(hole.goal);
   if (pinRank >= 0) shots[bandOf(pinRank)] = hole.goal;
   const better = links.map((j, rank) => [j, rank]).filter(([j]) => closer(j) && !shots.includes(j));
@@ -306,141 +306,152 @@ function offer() {
   return shots;
 }
 
-// ---------- Map ----------
-const base = () => Math.min(W, H) * 0.9;
-const toScreen = (x, y) => [W / 2 + (x - view.cx) * base() * view.zoom, H / 2 + (y - view.cy) * base() * view.zoom];
-
+// ---------- The hole, drawn side-on ----------
+const canvas = $("course"), ctx = canvas.getContext("2d");
+let W = 0, H = 0, flight = null;
 function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2), r = canvas.getBoundingClientRect();
   W = r.width; H = r.height; canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-
-function frame() {
-  if (!hole) return;
-  const pts = [hole.start, hole.goal, ...hole.path].map(pos), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  const w = Math.max(...xs) - Math.min(...xs) + 0.16, h = Math.max(...ys) - Math.min(...ys) + 0.16;
-  const zoom = Math.max(1, Math.min(4, Math.min(W / (base() * w), (H - 90) / (base() * h))));
-  flight = { from: { ...view }, to: { cx: (Math.max(...xs) + Math.min(...xs)) / 2, cy: (Math.max(...ys) + Math.min(...ys)) / 2 - 20 / (base() * zoom), zoom }, t0: performance.now() };
+const ground = () => H * 0.76;
+const xTee = () => Math.max(36, W * 0.06), xPin = () => W - Math.max(56, W * 0.09);
+// Metres to x: the tee sits at the hole's length, the pin at 0. Balls hit backwards roll into the rough behind the tee.
+function xFor(m) {
+  const t = 1 - Math.min(m, hole.length * 1.15) / hole.length;
+  return xTee() + t * (xPin() - xTee());
 }
 
-let ballAnim = null;   // { from: [x, y], t0 } the ball flying to its new spot
-function draw(now) {
-  requestAnimationFrame(draw);
-  if (!D) return;
+function drawCourse(now) {
+  requestAnimationFrame(drawCourse);
+  if (!hole) return;
+  const g = ground(), rnd = rng("scenery:" + hole.goal);
+  ctx.clearRect(0, 0, W, H);
+  // Sky and distant hills.
+  const sky = ctx.createLinearGradient(0, 0, 0, g); sky.addColorStop(0, "#e3f1fb"); sky.addColorStop(1, "#f4f9f1");
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, g);
+  ctx.fillStyle = "#d6e9cf";
+  ctx.beginPath(); ctx.moveTo(0, g);
+  for (let x = 0; x <= W + 40; x += 40) ctx.lineTo(x, g - 26 - Math.sin(x / 90 + hole.goal) * 14 - Math.sin(x / 37) * 6);
+  ctx.lineTo(W, g); ctx.fill();
+  // Trees.
+  for (let i = 0; i < 9; i++) {
+    const x = rnd() * W, s = 10 + rnd() * 12;
+    ctx.fillStyle = "#8a6a4a"; ctx.fillRect(x - 1.5, g - 12, 3, 12);
+    ctx.fillStyle = i % 2 ? "#6fae6a" : "#5e9f5c"; ctx.beginPath(); ctx.arc(x, g - 12 - s * .6, s * .75, 0, 7); ctx.fill();
+  }
+  // Rough, fairway with mowing stripes, green.
+  ctx.fillStyle = "#9fcf8f"; ctx.fillRect(0, g, W, H - g);
+  const fx0 = xTee() - 20, fx1 = xPin() + 34;
+  ctx.save(); ctx.beginPath(); ctx.roundRect(fx0, g + 4, fx1 - fx0, H - g - 14, 14); ctx.clip();
+  for (let x = fx0, k = 0; x < fx1; x += 28, k++) { ctx.fillStyle = k % 2 ? "#b6e2a4" : "#aad998"; ctx.fillRect(x, g, 28, H); }
+  ctx.restore();
+  ctx.fillStyle = "#8fd57c"; ctx.beginPath(); ctx.ellipse(xPin(), g + 16, 58, 13, 0, 0, 7); ctx.fill();
+  // A bunker for looks.
+  const bx = xTee() + (xPin() - xTee()) * (0.45 + rnd() * 0.2);
+  ctx.fillStyle = "#efe0b4"; ctx.beginPath(); ctx.ellipse(bx, g + 22, 30, 7, 0, 0, 7); ctx.fill();
+  // Tee box.
+  ctx.fillStyle = "#7cc36a"; ctx.fillRect(xTee() - 14, g + 6, 28, 8);
+  // Distance markers.
+  ctx.font = "600 11px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+  for (let m = 200; m < hole.length; m += 200) {
+    const x = xFor(m);
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(x - 1, g - 16, 2, 20);
+    ctx.fillStyle = "rgba(23,23,31,.55)"; ctx.fillText(m + " m", x, g - 18);
+  }
+  // Pin and flag.
+  const px = xPin(), wave = Math.sin(now / 300) * 2;
+  ctx.fillStyle = "#17171f"; ctx.beginPath(); ctx.ellipse(px, g + 16, 5, 2, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#17171f"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(px, g + 16); ctx.lineTo(px, g - 52); ctx.stroke();
+  ctx.fillStyle = "#e0453a"; ctx.beginPath(); ctx.moveTo(px, g - 52); ctx.quadraticCurveTo(px + 14, g - 48 + wave, px + 26, g - 44 + wave); ctx.lineTo(px, g - 36); ctx.fill();
+
+  // Earlier shots as faint arcs.
+  ctx.setLineDash([2, 6]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(23,23,31,.28)";
+  for (let k = 1; k < hole.marks.length - (flight ? 1 : 0); k++) arc(xFor(hole.marks[k - 1]), xFor(hole.marks[k]), g + 10, 1);
+  ctx.setLineDash([]);
+
+  // The ball: in flight, or resting with its distance above it.
+  let bx2 = xFor(hole.marks.at(-1)), by = g + 10;
   if (flight) {
-    const t = Math.min(1, (now - flight.t0) / 700), e = 1 - Math.pow(1 - t, 3);
-    view.cx = flight.from.cx + (flight.to.cx - flight.from.cx) * e;
-    view.cy = flight.from.cy + (flight.to.cy - flight.from.cy) * e;
-    view.zoom = flight.from.zoom * Math.pow(flight.to.zoom / flight.from.zoom, e);
+    const t = Math.min(1, (now - flight.t0) / flight.ms), x0 = xFor(flight.from), x1 = xFor(flight.to);
+    const h = Math.min(H * 0.55, 30 + Math.abs(x1 - x0) * 0.45);
+    bx2 = x0 + (x1 - x0) * t; by = g + 10 - Math.sin(Math.PI * t) * h;
+    ctx.setLineDash([2, 5]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(23,23,31,.45)"; arc(x0, x1, g + 10, t, h); ctx.setLineDash([]);
     if (t === 1) flight = null;
   }
-  ctx.clearRect(0, 0, W, H);
-  const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k, r = Math.max(1.6, Math.min(5, 1.6 * Math.sqrt(view.zoom)));
-  ctx.globalAlpha = hole ? 0.45 : 0.8;
-  COLORS.forEach((col, f) => {
-    ctx.fillStyle = col; ctx.beginPath();
-    for (const row of D.items) {
-      if (row[4] !== f) continue;
-      const sx = ox + row[5] * k, sy = oy + row[6] * k;
-      if (sx < -6 || sy < -6 || sx > W + 6 || sy > H + 6) continue;
-      ctx.moveTo(sx + r, sy); ctx.arc(sx, sy, r, 0, 7);
-    }
-    ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-
-  ctx.font = "600 11px Inter, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const boxes = [], limit = Math.round(10 + view.zoom * 18);
-  for (let i = 0; i < Math.min(limit, D.labels.length); i++) {
-    const l = D.labels[i], [sx, sy] = toScreen(l.x, l.y);
-    if (sx < 0 || sy < 0 || sx > W || sy > H) continue;
-    const text = l.t.toUpperCase(), w = ctx.measureText(text).width + 10, b = [sx - w / 2, sy - 9, w, 18];
-    if (boxes.some(o => b[0] < o[0] + o[2] && b[0] + b[2] > o[0] && b[1] < o[1] + o[3] && b[1] + b[3] > o[1])) continue;
-    boxes.push(b);
-    ctx.lineWidth = 4; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(251,251,250,.9)"; ctx.strokeText(text, sx, sy);
-    ctx.fillStyle = "rgba(23,23,31,.5)"; ctx.fillText(text, sx, sy);
+  ctx.fillStyle = "rgba(22,22,40,.22)"; ctx.beginPath(); ctx.ellipse(bx2, g + 13, 7, 2.5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#17171f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bx2, by, 7, 0, 7); ctx.fill(); ctx.stroke();
+  if (!flight && !hole.done) {
+    const label = hole.marks.at(-1) == null ? "?" : hole.marks.at(-1).toLocaleString("en-US") + " m to go";
+    ctx.font = "700 12px Inter, sans-serif"; const w = ctx.measureText(label).width + 16;
+    const lx = Math.min(W - w / 2 - 6, Math.max(w / 2 + 6, bx2));
+    ctx.fillStyle = "#17171f"; ctx.beginPath(); ctx.roundRect(lx - w / 2, by - 40, w, 22, 11); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; ctx.fillText(label, lx, by - 29);
   }
-  if (!hole) return;
-
-  // Path so far, the tee, the pin and the ball.
-  ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(23,23,31,.8)"; ctx.setLineDash([1, 7]);
-  ctx.beginPath(); hole.path.forEach((i, n) => { const [x, y] = toScreen(...pos(i)); n ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
-  const [sx, sy] = toScreen(...pos(hole.start));
-  ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#17171f"; ctx.stroke();
-  const [gx, gy] = toScreen(...pos(hole.goal));
-  ctx.beginPath(); ctx.ellipse(gx, gy, 16, 7, 0, 0, 7); ctx.fillStyle = "rgba(47,143,78,.22)"; ctx.fill();
-  ctx.strokeStyle = "#17171f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy - 32); ctx.stroke();
-  ctx.fillStyle = "#e0453a"; ctx.beginPath(); ctx.moveTo(gx, gy - 32); ctx.lineTo(gx + 18, gy - 25.5); ctx.lineTo(gx, gy - 19); ctx.fill();
-
-  let [bx, by] = toScreen(...pos(hole.path.at(-1))), lift = 0;
-  if (ballAnim) {
-    const t = Math.min(1, (now - ballAnim.t0) / 750), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const [fx, fy] = toScreen(...ballAnim.from);
-    lift = Math.sin(Math.PI * t) * Math.min(80, Math.hypot(bx - fx, by - fy) * 0.35);
-    bx = fx + (bx - fx) * e; by = fy + (by - fy) * e;
-    if (t === 1) ballAnim = null;
-  }
-  ctx.beginPath(); ctx.ellipse(bx, by + 2, 6, 2.5, 0, 0, 7); ctx.fillStyle = "rgba(22,22,40,.25)"; ctx.fill();
-  ctx.beginPath(); ctx.arc(bx, by - lift, 6.5, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#17171f"; ctx.stroke();
+}
+function arc(x0, x1, y, t = 1, h = Math.min(H * 0.55, 30 + Math.abs(x1 - x0) * 0.45)) {
+  ctx.beginPath(); ctx.moveTo(x0, y);
+  for (let s = 0; s <= t + 1e-9; s += 0.04) ctx.lineTo(x0 + (x1 - x0) * s, y - Math.sin(Math.PI * s) * h);
+  ctx.stroke();
 }
 
 // ---------- Panel ----------
-function prodHTML(i) {
-  const row = D.items[i];
-  return `<img src="${esc(row[2])}" alt=""><div class="n" title="${esc(row[1])}">${esc(short(row[1], 90))}</div>`;
-}
-
 function render() {
-  const cur = hole.path.at(-1), m = metres(cur);
+  const cur = hole.path.at(-1);
   $("hole").textContent = `${game.hole + 1} / ${HOLES}`;
   $("par").textContent = hole.par;
   $("strokes").textContent = hole.strokes;
-  $("goal").innerHTML = prodHTML(hole.goal);
-  $("here").innerHTML = prodHTML(cur);
-  $("togo").textContent = m == null ? "Lost ball" : m.toLocaleString("en-US") + " m";
-  hole.offer = m == null ? [] : offer();
-  $("shots").innerHTML = m == null
-    ? `<button class="btn" id="drop">Take a drop back where you were (+1 stroke)</button>`
-    : hole.offer.map((j, c) => j === hole.goal
-      ? `<button class="shot pin" data-j="${j}" data-c="${c}"><div class="club"><b>Putt</b><small>in the hole</small></div><img src="${esc(D.items[j][2])}" alt=""><span>⛳ ${esc(short(D.items[j][1]))}</span></button>`
-      : `<button class="shot" data-j="${j}" data-c="${c}"><div class="club"><b>${CLUBS[c].name}</b><small>${CLUBS[c].carry}</small></div><img src="${esc(D.items[j][2])}" alt=""><span>${esc(short(D.items[j][1]))}</span></button>`).join("");
-  document.querySelectorAll(".shot").forEach(b => b.onclick = () => shoot(+b.dataset.j, +b.dataset.c));
-  if ($("drop")) $("drop").onclick = () => { hole.path.push(hole.path.at(-2)); hole.strokes++; say("meh", "⛳", "Took a drop", "Back where you were, one stroke added."); render(); frame(); };
+  $("pin-img").src = D.items[hole.goal][2]; $("pin-name").textContent = shortName(hole.goal); $("pinbadge").title = D.items[hole.goal][1];
+  $("ball-img").src = D.items[cur][2]; $("ball-name").textContent = shortName(cur); $("ballbadge").title = D.items[cur][1];
+  $("pinbadge").hidden = false; $("ballbadge").hidden = false;
+  hole.offer = offer();
+  $("shots").innerHTML = hole.offer.map((j, c) => {
+    const pin = j === hole.goal;
+    return `<button class="shot${pin ? " pin" : ""}" data-c="${c}" title="${esc(D.items[j][1])}">
+      <div class="club"><b>${pin ? "⛳ Putt" : CLUBS[c].name}</b><small>${pin ? "in the hole" : CLUBS[c].carry}<kbd>${c + 1}</kbd></small></div>
+      <div class="pic"><img src="${esc(D.items[j][2])}" alt=""></div>
+      <div class="nm">${esc(shortName(j))}</div></button>`;
+  }).join("");
+  document.querySelectorAll(".shot").forEach(b => b.onclick = () => shoot(+b.dataset.c));
 }
 
 function say(kind, emoji, title, sub) {
   $("say").innerHTML = `<div class="say ${kind}"><div class="e">${emoji}</div><div><b>${esc(title)}</b><span>${esc(sub)}</span></div></div>`;
 }
 
-// The fun part: how did that shot go?
-function commentate(club, before, after) {
-  const verb = CLUBS[club].verb;
-  if (after == null) return say("bad", "🌲", "Lost in the woods!", "No way to the pin from here. Take a drop.");
+// How did that shot go, and why? The "why" is the model's link: shoppers who look at one also look at the other.
+function commentate(club, from, to, before, after) {
+  const verb = CLUBS[club].verb, a = shortName(from), b = shortName(to);
+  const link = `Shoppers who look at ${a} also look at ${b}`;
+  const where = D.items[to][4] === D.items[hole.goal][4] ? `, and that’s ${family(to)}, where the pin is.` : `, over in ${family(to)}.`;
   const gain = before - after, m = Math.abs(gain).toLocaleString("en-US");
-  if (gain >= 380) return say("good", "🚀", club === 2 ? "WOW, what a drive!" : "WOW, you got far!", `${m} m closer to the pin.`);
-  if (gain >= 200) return say("good", "💪", `Great ${verb}!`, `${m} m closer.`);
-  if (gain >= 60) return say("good", "👍", `Nice ${verb}.`, `${m} m closer.`);
-  if (gain > -60) return say("meh", "😐", "A little dribble…", "You barely moved.");
-  if (gain > -300) return say("bad", "🙈", "Well, that was a duffer.", `${m} m the wrong way.`);
-  return say("bad", "🌪️", club === 2 ? "Sliced it into the rough!" : "Into the rough!", `${m} m further from the pin.`);
+  if (gain >= 260) return say("good", "🚀", club === 2 ? `WOW, what a drive! ${m} m closer` : `WOW, you got far! ${m} m closer`, link + where);
+  if (gain >= 120) return say("good", "💪", `Great ${verb}! ${m} m closer`, link + where);
+  if (gain > 30) return say("good", "👍", `Nice ${verb}, ${m} m closer`, link + where);
+  if (gain >= -30) return say("meh", "😐", "A little dribble…", `${link}, but that doesn’t get you nearer the pin.`);
+  if (gain > -250) return say("bad", "🙈", `Well, that was a duffer. ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
+  return say("bad", "🌪️", club === 2 ? `Sliced it into the rough! ${m} m back` : `Into the rough! ${m} m back`, `${link}. Not the way to ${shortName(hole.goal)}.`);
 }
 
-function shoot(j, club) {
-  if (!hole || hole.done) return;
-  const before = metres(hole.path.at(-1));
-  ballAnim = { from: pos(hole.path.at(-1)), t0: performance.now() };
-  hole.path.push(j); hole.strokes++;
-  if (j === hole.goal) return finishHole();
-  commentate(club, before, metres(j));
-  if (hole.strokes >= hole.par + 3) return finishHole(true);
-  render(); frame();
+function shoot(club) {
+  if (!hole || hole.done || flight) return;
+  const from = hole.path.at(-1), to = hole.offer[club], before = hole.marks.at(-1), after = metres(to);
+  hole.path.push(to); hole.strokes++;
+  hole.marks.push(after ?? hole.length * 1.15);
+  const ms = 650 + Math.min(700, Math.abs((after ?? before) - before) * 1.2);
+  flight = { from: before, to: after ?? hole.length * 1.15, t0: performance.now(), ms };
+  document.querySelectorAll(".shot").forEach(b => b.disabled = true);
+  $("strokes").textContent = hole.strokes;
+  setTimeout(() => {
+    if (to === hole.goal) return finishHole();
+    commentate(club, from, to, before, after ?? before + 300);
+    if (after == null) { hole.path.pop(); hole.marks.pop(); toast("No way to the pin from there. Ball dropped back, stroke counts."); }
+    if (hole.strokes >= hole.par + 3) return finishHole(true);
+    render();
+  }, ms);
 }
 
 $("giveup").onclick = () => { if (hole && !hole.done) { hole.strokes = hole.par + 3; finishHole(true); } };
-document.addEventListener("keydown", e => {
-  if (!hole || hole.done || !/^[1-3]$/.test(e.key) || !hole.offer?.length) return;
-  shoot(hole.offer[+e.key - 1], +e.key - 1);
-});
+document.addEventListener("keydown", e => { if (hole && !hole.done && /^[1-3]$/.test(e.key)) shoot(+e.key - 1); });
 
 // ---------- Holes and course ----------
 function termFor(strokes, par) {
@@ -453,30 +464,32 @@ const rel = n => n === 0 ? "E" : n > 0 ? "+" + n : String(n);
 
 function startHole() {
   const h = game.course[game.hole];
-  hole = { ...h, path: [h.start], strokes: 0, dist: hopsTo(h.goal), done: false };
+  hole = { ...h, path: [h.start], strokes: 0, dist: stepsTo(h.goal), done: false };
+  const m0 = metres(h.start);
+  hole.length = Math.ceil((m0 + 40) / 100) * 100;
+  hole.marks = [m0];
   $("holedone").hidden = true;
-  say("meh", "🏌️", `Hole ${game.hole + 1}, par ${h.par}`, "Pick the shot that feels closest to the pin.");
-  render(); frame();
+  say("meh", "🏌️", `Hole ${game.hole + 1}: ${m0} m, par ${h.par}`, `Get from ${shortName(h.start)} to ${shortName(h.goal)}.`);
+  render();
 }
 
 function finishHole(pickedUp = false) {
   hole.done = true;
   game.scores[game.hole] = hole.strokes;
   $("strokes").textContent = hole.strokes;
-  $("togo").textContent = pickedUp ? $("togo").textContent : "0 m";
-  frame();
-  if (!pickedUp) say("good", "⛳", "In the hole!", `${hole.strokes} strokes.`);
+  document.querySelectorAll(".shot").forEach(b => b.disabled = true);
+  if (!pickedUp) say("good", "⛳", "In the hole!", `${hole.strokes} strokes on a par ${hole.par}.`);
   $("hd-hole").textContent = `Hole ${game.hole + 1} · par ${hole.par}`;
   $("hd-title").textContent = pickedUp ? "Picked up" : termFor(hole.strokes, hole.par);
-  $("hd-sub").textContent = pickedUp ? `Counted as ${hole.strokes}. The shortest route took ${hole.best}.`
+  $("hd-sub").textContent = pickedUp ? `Counted as ${hole.strokes}. The shortest route took ${hole.best} shots.`
     : hole.strokes === hole.best ? `${hole.strokes} strokes: the shortest route there is!` : `${hole.strokes} strokes. The shortest route takes ${hole.best}.`;
   const shown = hole.path.length > 9 ? [...hole.path.slice(0, 4), -1, ...hole.path.slice(-4)] : hole.path;
   $("hd-path").innerHTML = shown.map((i, n) => i < 0 ? `<span class="arrow">…</span>` :
-    `${n ? '<span class="arrow">→</span>' : ""}<img src="${esc(D.items[i][2])}" alt="" title="${esc(D.items[i][1])}" class="${i === hole.start ? "start" : i === hole.goal ? "end" : ""}">`).join("");
+    `${n ? '<span class="arrow">→</span>' : ""}<img src="${esc(D.items[i][2])}" alt="" title="${esc(shortName(i))}" class="${i === hole.start ? "start" : i === hole.goal ? "end" : ""}">`).join("");
   const last = game.hole === HOLES - 1;
   $("hd-next").textContent = last ? "See your scorecard" : "Next hole →";
   $("hd-next").onclick = () => last ? finishCourse() : (game.hole++, startHole());
-  setTimeout(() => { $("holedone").hidden = false; $("hd-next").focus(); }, 900);
+  setTimeout(() => { $("holedone").hidden = false; $("hd-next").focus(); }, 700);
 }
 
 function finishCourse() {
@@ -500,7 +513,7 @@ function start(seed, daily) {
 
 function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 const randomSeed = () => Math.random().toString(36).slice(2, 8);
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2200); }
 
 $("play-daily").onclick = () => start(today(), true);
 $("play-random").onclick = () => start(randomSeed(), false);
@@ -514,14 +527,14 @@ $("share").onclick = async () => {
 };
 
 // ---------- Boot ----------
-addEventListener("resize", () => { resize(); frame(); });
+addEventListener("resize", resize);
 Promise.all([fetch("../data.json").then(r => r.json()), fetch("../golf.json").then(r => r.json())]).then(([data, golf]) => {
   D = data; NEAR = golf.near;
   reverse = NEAR.map(() => []);
   NEAR.forEach((links, a) => links.forEach(b => reverse[b].push(a)));
   resize();
   $("loading").hidden = true;
-  requestAnimationFrame(draw);
+  requestAnimationFrame(drawCourse);
   const seed = new URLSearchParams(location.search).get("seed");
   if (seed) start(seed, /^\d{4}-\d{2}-\d{2}$/.test(seed));
   else $("intro").hidden = false;

@@ -20,9 +20,9 @@ It is a small, complete example of building on the BehaviorGPT SDK's embedding m
 
 ## MapGolf
 
-Each turn offers three shots, all taken from `client.similar_products()` for the product your ball is on: a **chip** (one of the 4 most similar products), an **iron** (ranks 9–18) and a **driver** (ranks 25–36). Pick the one that feels closest to the pin and the game tells you how it went: "WOW, what a drive! 420 m closer" or "Well, that was a duffer. 260 m the wrong way."
+A side-view golf hole: tee on the left, pin on the right, and a ball that flies forward or backward with every shot. Each turn offers three shots as picture cards, all taken from `client.similar_products()` for the product your ball is on: a **chip** (one of the 4 most similar products), an **iron** (ranks 9–18) and a **driver** (ranks 25–36). Pick the one that feels closest to the pin, and the game tells you how it went and why: "WOW, what a drive! 310 m closer. Shoppers who look at iTouch Air Smartwatch also look at SAMSUNG Galaxy Watch, and that's Tech & Gaming, where the pin is."
 
-The distance to the pin counts the steps left along the model's links (250 m each, found by a breadth-first search backwards from the pin), plus map distance to break ties. To keep it friendly, two of the three shots get you closer whenever the links allow it, and the pin shows up as a shot once it is in reach. Holes are 3–4 steps on the best route, par is two more. In simulation, a player who picks a good shot 75% of the time averages about par; clicking at random rarely finishes.
+The distance to the pin counts the steps left along the model's links (200 m each, found by a breadth-first search backwards from the pin), plus map distance to break ties. Two of the three shots get you closer whenever the links allow it, and the pin shows up as a putt once it is in reach. Holes are 2–3 steps on the best route, par is two more. Long Amazon titles are shortened on the cards (full title on hover).
 
 ## What it shows
 
