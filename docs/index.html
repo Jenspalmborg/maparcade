@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ProductGuessr</title>
+<meta name="description" content="GeoGuessr for products. Every product has a place on BehaviorGPT's map of a store. Can you guess where?">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d14;
+    --panel: rgba(20, 23, 34, .86);
+    --panel-solid: #151824;
+    --line: rgba(255, 255, 255, .09);
+    --ink: #f3f4f8;
+    --ink-2: #a9aec0;
+    --ink-3: #6d7389;
+    --accent: #ffd23f;
+    --accent-ink: #1a1400;
+    --good: #57d68d;
+    --ok: #ffd23f;
+    --bad: #ff6b6b;
+    --display: "Bricolage Grotesque", "Inter", sans-serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --radius: 16px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+
+  #map { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+  body[data-phase="reveal"] #map, body[data-phase="end"] #map, body[data-phase="intro"] #map { cursor: grab; }
+  #map.dragging { cursor: grabbing !important; }
+
+  .glass { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+           border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+
+  /* Top bar */
+  header { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+           padding: 14px 18px; pointer-events: none; z-index: 5; }
+  header > * { pointer-events: auto; }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
+  .brand-dot { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff6c9, var(--accent) 45%, #c99a00); box-shadow: 0 0 18px rgba(255,210,63,.55); }
+  .hud { display: flex; gap: 6px; padding: 5px; }
+  .hud div { padding: 4px 12px; border-radius: 10px; text-align: center; }
+  .hud small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .hud b { font-family: var(--display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Product card */
+  .card { position: fixed; top: 72px; left: 18px; width: 260px; z-index: 4; overflow: hidden; transition: opacity .25s, transform .25s; }
+  .card .ask { padding: 12px 16px 10px; font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+  .card .pic { background: #fff; height: 190px; display: grid; place-items: center; }
+  .card .pic img { max-width: 86%; max-height: 88%; object-fit: contain; }
+  .card .meta { padding: 12px 16px 16px; }
+  .card .name { font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .price { margin-top: 6px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+  /* Bottom action area */
+  .dock { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
+          display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(560px, calc(100% - 32px)); }
+  .hint { font-size: 14px; color: var(--ink-2); padding: 8px 16px; border-radius: 999px; }
+  .btn { border: 0; cursor: pointer; border-radius: 12px; padding: 13px 28px; font-weight: 600; font-size: 16px;
+         background: var(--accent); color: var(--accent-ink); box-shadow: 0 8px 24px rgba(255,210,63,.25); transition: transform .1s, filter .15s, opacity .2s; }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+  .btn.ghost { background: rgba(255,255,255,.08); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+
+  .result { width: 100%; padding: 18px 20px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; }
+  .result .verdict { font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
+  .result .pts { font-family: var(--display); font-weight: 600; font-size: 28px; font-variant-numeric: tabular-nums; text-align: right; }
+  .result .sub { color: var(--ink-2); font-size: 14px; }
+  .result .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 0 4px; }
+  .result .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .neighbours { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+  .neighbours img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; }
+  .result .btn { grid-column: 1 / -1; margin-top: 10px; }
+
+  /* Map controls and legend */
+  .zoom { position: fixed; right: 18px; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 4; display: flex; flex-direction: column; overflow: hidden; }
+  .zoom button { width: 40px; height: 40px; border: 0; background: none; cursor: pointer; font-size: 20px; color: var(--ink-2); }
+  .zoom button + button { border-top: 1px solid var(--line); }
+  .zoom button:hover { color: var(--ink); background: rgba(255,255,255,.05); }
+  .legend { position: fixed; left: 18px; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 3; padding: 10px 14px;
+            display: grid; grid-template-columns: repeat(2, auto); gap: 3px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .legend i { width: 8px; height: 8px; border-radius: 50%; }
+
+  .tip { position: fixed; z-index: 7; pointer-events: none; display: none; width: 200px; overflow: hidden; }
+  .tip .pic { background: #fff; height: 110px; display: grid; place-items: center; }
+  .tip img { max-width: 86%; max-height: 88%; object-fit: contain; }
+  .tip div:last-child { padding: 8px 12px; font-size: 13px; line-height: 1.35; }
+
+  /* Overlays: intro and end */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
+             background: radial-gradient(ellipse at center, rgba(11,13,20,.55), rgba(11,13,20,.92)); overflow-y: auto; }
+  .modal { width: min(460px, 100%); padding: 32px 30px 28px; text-align: center; }
+  .modal h1 { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -.035em; line-height: 1; margin: 6px 0 12px; }
+  .modal h1 span { color: var(--accent); }
+  .modal p.lede { color: var(--ink-2); margin: 0 auto 22px; max-width: 34ch; }
+  .steps { text-align: left; display: grid; gap: 10px; margin: 0 0 26px; padding: 0; list-style: none; }
+  .steps li { display: flex; gap: 12px; align-items: flex-start; color: var(--ink-2); font-size: 14px; }
+  .steps b { flex: none; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,210,63,.14); color: var(--accent);
+             display: grid; place-items: center; font-size: 12px; }
+  .modal .actions { display: flex; flex-direction: column; gap: 10px; }
+  .modal .actions .btn { width: 100%; }
+  .fine { margin-top: 18px; font-size: 12px; color: var(--ink-3); }
+  .fine a { color: var(--ink-2); }
+
+  .total { font-family: var(--display); font-weight: 800; font-size: 56px; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .total small { font-size: 20px; color: var(--ink-3); font-weight: 600; }
+  .rounds { list-style: none; padding: 0; margin: 22px 0 24px; display: grid; gap: 8px; text-align: left; }
+  .rounds li { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; font-size: 14px; }
+  .rounds img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 8px; padding: 3px; }
+  .rounds span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+  .rounds b { font-variant-numeric: tabular-nums; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 18px; border-radius: 999px;
+           background: var(--ink); color: var(--bg); font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  .loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--ink-3); z-index: 30; background: var(--bg); }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 700px) {
+    header { padding: 10px 12px; }
+    .brand { font-size: 17px; }
+    .brand-dot { width: 18px; height: 18px; }
+    .hud div { padding: 2px 9px; }
+    .hud b { font-size: 15px; }
+    .card { top: 58px; left: 12px; right: 12px; width: auto; display: grid; grid-template-columns: 84px 1fr; }
+    .card .ask { grid-column: 1 / -1; padding: 8px 12px 6px; font-size: 11px; }
+    .card .pic { height: 84px; }
+    .card .meta { padding: 8px 12px 10px; }
+    .card .name { -webkit-line-clamp: 2; font-size: 14px; }
+    .card .price { margin-top: 2px; font-size: 13px; }
+    .legend { display: none; }
+    .dock { width: calc(100% - 120px); left: 16px; transform: none; align-items: flex-start; }
+    .dock .result { width: calc(100vw - 32px); }
+    .hint { font-size: 13px; }
+    .zoom { bottom: max(18px, env(safe-area-inset-bottom)); right: 12px; }
+    .zoom button { width: 36px; height: 36px; }
+    .result .verdict { font-size: 20px; }
+    .result .pts { font-size: 22px; }
+    .modal { padding: 26px 20px 22px; }
+    .modal h1 { font-size: 36px; }
+  }
+</style>
+</head>
+<body data-phase="loading">
+
+<canvas id="map" aria-label="Map of the product catalog"></canvas>
+
+<header>
+  <div class="brand"><span class="brand-dot"></span>ProductGuessr</div>
+  <div class="hud glass" id="hud" hidden>
+    <div><small>Round</small><b id="round">1 / 5</b></div>
+    <div><small>Score</small><b id="score">0</b></div>
+  </div>
+</header>
+
+<section class="card glass" id="card" hidden>
+  <div class="ask">Where on the map is…</div>
+  <div class="pic"><img id="card-img" alt=""></div>
+  <div class="meta">
+    <div class="name" id="card-name"></div>
+    <div class="price" id="card-price"></div>
+  </div>
+</section>
+
+<div class="dock" id="dock">
+  <div class="hint glass" id="hint" hidden>Drag to explore · click to drop your pin</div>
+  <button class="btn" id="guess" hidden disabled>Guess</button>
+  <div class="result glass" id="result" hidden></div>
+</div>
+
+<div class="legend glass" id="legend" hidden></div>
+<div class="zoom glass" id="zoom" hidden>
+  <button id="zin" aria-label="Zoom in">+</button>
+  <button id="zout" aria-label="Zoom out">−</button>
+  <button id="zfit" aria-label="Show whole map">⤢</button>
+</div>
+<div class="tip glass" id="tip"><div class="pic"><img alt=""></div><div></div></div>
+
+<div class="overlay" id="intro" hidden>
+  <div class="modal glass">
+    <div class="brand" style="justify-content:center"><span class="brand-dot"></span></div>
+    <h1>Product<span>Guessr</span></h1>
+    <p class="lede">An AI has sorted 8,000 products into a map, with similar things living side by side. Can you guess where each one lives?</p>
+    <ol class="steps">
+      <li><b>1</b>You get a product. Explore the map: colours are departments, labels are landmarks.</li>
+      <li><b>2</b>Drop your pin where you think it lives, then hit Guess.</li>
+      <li><b>3</b>The closer you land, the more points. Five rounds, 5,000 each.</li>
+    </ol>
+    <div class="actions">
+      <button class="btn" id="play-daily">Play today’s challenge</button>
+      <button class="btn ghost" id="play-random">Random game</button>
+    </div>
+    <p class="fine">Map by <a href="https://github.com/Unbox-AI/behaviorgpt" target="_blank" rel="noopener">BehaviorGPT</a>, a model trained on what shoppers actually do.</p>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="modal glass">
+    <p class="lede" id="end-title" style="margin-bottom:8px"></p>
+    <div class="total" id="end-total"></div>
+    <ul class="rounds" id="end-rounds"></ul>
+    <div class="actions">
+      <button class="btn" id="share">Share result</button>
+      <button class="btn ghost" id="again">Play a random game</button>
+      <button class="btn ghost" id="explore">Explore the map</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">Loading the map…</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Config ----------
+const ROUNDS = 5;
+const MAX_POINTS = 5000;
+const FALLOFF = 0.09;   // map units: points drop to 37% at this distance
+const COLORS = ["#f2a65a", "#5dadec", "#ef6f9c", "#f4d35e", "#c792ea", "#7bd389", "#4ecdc4",
+                "#b8c0ff", "#ff8c61", "#d4a373", "#9bf6ff", "#e76f51", "#6b7280"];
+
+// ---------- State ----------
+const $ = id => document.getElementById(id);
+const canvas = $("map"), ctx = canvas.getContext("2d");
+let D;                      // data.json
+let W = 0, H = 0, DPR = 1;
+const view = { cx: .5, cy: .5, zoom: 1 };
+let game = null;            // { seed, daily, picks, round, guesses, scores }
+let pin = null;             // current guess in map units
+let anim = null;            // reveal line animation start time
+let hover = -1;
+let dirty = true;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n.toLocaleString("en-US");
+const item = i => { const r = D.items[i]; return { id: r[0], name: r[1], img: r[2], price: r[3], f: r[4], x: r[5], y: r[6] }; };
+const setPhase = p => { document.body.dataset.phase = p; dirty = true; };
+
+// Seeded RNG so a daily challenge and shared links give everyone the same products.
+function rng(seed) {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) { h = Math.imul(h ^ seed.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+  return () => {
+    h = Math.imul(h ^ h >>> 16, 2246822507); h = Math.imul(h ^ h >>> 13, 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+}
+
+function pickRounds(seed) {
+  const rand = rng(seed), picks = [], used = new Set();
+  let tries = 0;
+  while (picks.length < ROUNDS && tries++ < 500) {
+    const i = D.pool[Math.floor(rand() * D.pool.length)];
+    const f = D.items[i][4];
+    // Spread rounds over different departments.
+    if (used.has(f) && tries < 200) continue;
+    used.add(f); picks.push(i);
+  }
+  return picks;
+}
+
+// ---------- Coordinates ----------
+const base = () => Math.min(W, H) * 0.9;
+const toScreen = (x, y) => [W / 2 + (x - view.cx) * base() * view.zoom, H / 2 + (y - view.cy) * base() * view.zoom];
+const toMap = (sx, sy) => [view.cx + (sx - W / 2) / (base() * view.zoom), view.cy + (sy - H / 2) / (base() * view.zoom)];
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  dirty = true;
+}
+
+function zoomAt(sx, sy, factor) {
+  const [mx, my] = toMap(sx, sy);
+  view.zoom = Math.min(40, Math.max(0.6, view.zoom * factor));
+  const [nx, ny] = toMap(sx, sy);
+  view.cx += mx - nx; view.cy += my - ny;
+  dirty = true;
+}
+
+let flight = null;
+function flyTo(cx, cy, zoom, ms = 700) {
+  flight = { from: { ...view }, to: { cx, cy, zoom }, t0: performance.now(), ms };
+}
+function fitBoth(a, b) {
+  const pad = 0.12;
+  const w = Math.abs(a[0] - b[0]) + pad, h = Math.abs(a[1] - b[1]) + pad;
+  // Leave room for the result panel at the bottom.
+  const zoom = Math.min(3.5, Math.max(0.9, Math.min(W / (base() * w), (H * 0.62) / (base() * h))));
+  flyTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.09 / zoom, zoom);
+}
+
+// ---------- Drawing ----------
+let byFamily = [];
+function draw(now) {
+  if (flight) {
+    const t = Math.min(1, (now - flight.t0) / flight.ms), e = 1 - Math.pow(1 - t, 3);
+    view.cx = flight.from.cx + (flight.to.cx - flight.from.cx) * e;
+    view.cy = flight.from.cy + (flight.to.cy - flight.from.cy) * e;
+    view.zoom = flight.from.zoom * Math.pow(flight.to.zoom / flight.from.zoom, e);
+    if (t === 1) flight = null;
+    dirty = true;
+  }
+  if (anim !== null) dirty = true;
+  if (!dirty || !D) return requestAnimationFrame(draw);
+  dirty = false;
+
+  ctx.clearRect(0, 0, W, H);
+  const phase = document.body.dataset.phase;
+  const answer = (phase === "reveal") ? item(game.picks[game.round]) : null;
+
+  // Points
+  // Additive blending: where products pile up, the map glows brighter.
+  const r = Math.max(1.6, Math.min(5, 1.7 * Math.sqrt(view.zoom)));
+  const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k;
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = answer ? 0.35 : 0.6;
+  byFamily.forEach((idxs, f) => {
+    ctx.fillStyle = COLORS[f];
+    for (const i of idxs) {
+      const row = D.items[i], sx = ox + row[5] * k, sy = oy + row[6] * k;
+      if (sx < -5 || sy < -5 || sx > W + 5 || sy > H + 5) continue;
+      ctx.fillRect(sx - r / 2, sy - r / 2, r, r);
+    }
+  });
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+
+  // Landmarks: more appear as you zoom in; skip any that would overlap.
+  const boxes = [], limit = Math.round(30 + view.zoom * 30);
+  ctx.font = "600 11px Inter, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (let i = 0; i < Math.min(limit, D.labels.length); i++) {
+    const l = D.labels[i], [sx, sy] = toScreen(l.x, l.y);
+    if (sx < 0 || sy < 0 || sx > W || sy > H) continue;
+    const text = l.t.toUpperCase(), w = ctx.measureText(text).width + 10, box = [sx - w / 2, sy - 9, w, 18];
+    if (boxes.some(b => box[0] < b[0] + b[2] && box[0] + box[2] > b[0] && box[1] < b[1] + b[3] && box[1] + box[3] > b[1])) continue;
+    boxes.push(box);
+    ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(11,13,20,.85)"; ctx.strokeText(text, sx, sy);
+    ctx.fillStyle = "rgba(243,244,248,.78)"; ctx.fillText(text, sx, sy);
+  }
+
+  // Reveal: line from guess to answer, then the answer marker.
+  if (answer && game.guesses[game.round]) {
+    const [gx, gy] = toScreen(...game.guesses[game.round]);
+    const [ax, ay] = toScreen(answer.x, answer.y);
+    const t = anim === null ? 1 : Math.min(1, (now - anim) / 700);
+    if (t === 1) anim = null;
+    ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + (ax - gx) * t, gy + (ay - gy) * t); ctx.stroke(); ctx.setLineDash([]);
+    if (t === 1) {
+      const pulse = (now / 900) % 1;
+      ctx.beginPath(); ctx.arc(ax, ay, 10 + pulse * 22, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,210,63,${0.7 * (1 - pulse)})`; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(ax, ay, 9, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS[answer.f]; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+      dirty = true;
+    }
+  }
+
+  // Your pin
+  const p = phase === "reveal" ? game.guesses[game.round] : pin;
+  if (p && (phase === "guess" || phase === "reveal")) drawPin(...toScreen(...p));
+
+  // Hover highlight
+  if (hover >= 0) {
+    const [hx, hy] = toScreen(D.items[hover][5], D.items[hover][6]);
+    ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  }
+  requestAnimationFrame(draw);
+}
+
+function drawPin(x, y) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-11, -14, -11, -30, 0, -30); ctx.bezierCurveTo(11, -30, 11, -14, 0, 0);
+  ctx.fillStyle = "#fff"; ctx.fill(); ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.arc(0, -20, 4.5, 0, Math.PI * 2); ctx.fillStyle = "#0b0d14"; ctx.fill();
+  ctx.restore();
+}
+
+// ---------- Input: drag to pan, wheel/pinch to zoom, click to place a pin ----------
+const pointers = new Map();
+let drag = null;
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  drag = { x: e.clientX, y: e.clientY, moved: false, pinch: pointers.size === 2 ? pinchDist() : 0 };
+  flight = null;
+});
+canvas.addEventListener("pointermove", e => {
+  if (!pointers.has(e.pointerId)) return onHover(e);
+  const prev = pointers.get(e.pointerId);
+  pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pointers.size === 2) {
+    const d = pinchDist(), c = pinchCenter();
+    if (drag.pinch) zoomAt(c[0], c[1], d / drag.pinch);
+    drag.pinch = d; drag.moved = true; return;
+  }
+  if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 5) drag.moved = true;
+  if (drag.moved) {
+    canvas.classList.add("dragging");
+    const k = base() * view.zoom;
+    view.cx -= (e.clientX - prev[0]) / k; view.cy -= (e.clientY - prev[1]) / k;
+    dirty = true;
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  canvas.classList.remove("dragging");
+  if (pointers.size === 0 && drag && !drag.moved && document.body.dataset.phase === "guess") {
+    pin = toMap(e.clientX, e.clientY);
+    $("guess").disabled = false; $("hint").hidden = true; dirty = true;
+  }
+  if (pointers.size === 0) drag = null;
+}
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
+canvas.addEventListener("wheel", e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a[0] - b[0], a[1] - b[1]); };
+const pinchCenter = () => { const [a, b] = [...pointers.values()]; return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
+
+// Hovering reveals products only once you have guessed, so no peeking.
+function onHover(e) {
+  const phase = document.body.dataset.phase, tip = $("tip");
+  if (!(phase === "reveal" || phase === "explore") || e.pointerType === "touch") { hideTip(); return; }
+  const k = base() * view.zoom, ox = W / 2 - view.cx * k, oy = H / 2 - view.cy * k;
+  let best = -1, bestD = 64;
+  D.items.forEach((row, i) => {
+    const dx = ox + row[5] * k - e.clientX, dy = oy + row[6] * k - e.clientY, d = dx * dx + dy * dy;
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  if (best !== hover) { hover = best; dirty = true; }
+  if (best < 0) return hideTip();
+  const it = item(best);
+  tip.querySelector("img").src = it.img;
+  tip.lastElementChild.textContent = it.name.length > 90 ? it.name.slice(0, 88) + "…" : it.name;
+  tip.style.display = "block";
+  tip.style.left = Math.min(W - 212, e.clientX + 14) + "px";
+  tip.style.top = Math.min(H - 190, e.clientY + 14) + "px";
+}
+function hideTip() { $("tip").style.display = "none"; if (hover !== -1) { hover = -1; dirty = true; } }
+canvas.addEventListener("pointerleave", hideTip);
+
+$("zin").onclick = () => zoomAt(W / 2, H / 2, 1.6);
+$("zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.6);
+$("zfit").onclick = () => flyTo(.5, .5, 1, 500);
+
+// ---------- Game flow ----------
+function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+
+function start(seed, daily) {
+  game = { seed, daily, picks: pickRounds(seed), round: 0, guesses: [], scores: [] };
+  const url = new URL(location.href); url.searchParams.set("seed", seed);
+  history.replaceState(null, "", url);
+  $("intro").hidden = true; $("end").hidden = true;
+  $("hud").hidden = false; $("zoom").hidden = false; $("legend").hidden = false;
+  nextRound();
+}
+
+function nextRound() {
+  pin = null; hideTip();
+  const it = item(game.picks[game.round]);
+  $("card-img").src = it.img;
+  $("card-name").textContent = it.name;
+  $("card-price").textContent = it.price != null ? "$" + it.price.toFixed(2) : "";
+  $("card").hidden = false;
+  $("round").textContent = `${game.round + 1} / ${ROUNDS}`;
+  $("score").textContent = fmt(game.scores.reduce((a, b) => a + b, 0));
+  $("result").hidden = true; $("guess").hidden = false; $("guess").disabled = true; $("hint").hidden = false;
+  setPhase("guess");
+  flyTo(.5, .5, 1, 500);
+}
+
+function verdict(pts) {
+  if (pts >= 4500) return "Bullseye!";
+  if (pts >= 3500) return "Right neighbourhood";
+  if (pts >= 2000) return "Same part of town";
+  if (pts >= 800) return "Wrong district";
+  return "Different planet";
+}
+const tierColor = pts => pts >= 3500 ? "var(--good)" : pts >= 1500 ? "var(--ok)" : "var(--bad)";
+
+function nearest(i, n) {
+  const [x, y] = [D.items[i][5], D.items[i][6]];
+  return D.items.map((r, j) => [j, (r[5] - x) ** 2 + (r[6] - y) ** 2]).filter(([j]) => j !== i)
+    .sort((a, b) => a[1] - b[1]).slice(0, n).map(([j]) => j);
+}
+
+function submitGuess() {
+  if (!pin) return;
+  const i = game.picks[game.round], it = item(i);
+  const d = Math.hypot(pin[0] - it.x, pin[1] - it.y);
+  const pts = Math.round(MAX_POINTS * Math.exp(-d / FALLOFF));
+  game.guesses[game.round] = pin; game.scores[game.round] = pts;
+  $("score").textContent = fmt(game.scores.reduce((a, b) => a + b, 0));
+
+  const last = game.round === ROUNDS - 1;
+  const hood = nearest(i, 4).map(j => item(j));
+  $("result").innerHTML = `
+    <div class="verdict">${verdict(pts)}</div>
+    <div class="pts">+${fmt(pts)}</div>
+    <div class="sub">It lives in <b style="color:${COLORS[it.f]}">${esc(D.families[it.f])}</b>${hood.length ? ", next to…" : ""}</div>
+    <div></div>
+    <div class="bar"><i style="background:${tierColor(pts)}"></i></div>
+    <div class="neighbours">${hood.map(n => `<img src="${esc(n.img)}" alt="" title="${esc(n.name)}">`).join("")}</div>
+    <button class="btn" id="next">${last ? "See your score" : "Next round →"}</button>`;
+  $("guess").hidden = true; $("hint").hidden = true; $("result").hidden = false;
+  requestAnimationFrame(() => $("result").querySelector(".bar i").style.width = (pts / MAX_POINTS * 100) + "%");
+  $("next").onclick = () => last ? finish() : (game.round++, nextRound());
+  $("next").focus();
+  anim = performance.now();
+  setPhase("reveal");
+  fitBoth(pin, [it.x, it.y]);
+}
+
+function finish() {
+  const total = game.scores.reduce((a, b) => a + b, 0);
+  $("end-title").textContent = game.daily ? `Daily challenge · ${game.seed}` : "Your score";
+  $("end-total").innerHTML = `${fmt(total)}<small> / ${fmt(ROUNDS * MAX_POINTS)}</small>`;
+  $("end-rounds").innerHTML = game.picks.map((i, r) => {
+    const it = item(i);
+    return `<li><img src="${esc(it.img)}" alt=""><span>${esc(it.name)}</span><b style="color:${tierColor(game.scores[r])}">${fmt(game.scores[r])}</b></li>`;
+  }).join("");
+  $("card").hidden = true; $("result").hidden = true;
+  $("end").hidden = false;
+  setPhase("end");
+  try { if (game.daily) localStorage.setItem("pg-daily-" + game.seed, String(total)); } catch {}
+}
+
+function shareText() {
+  const total = game.scores.reduce((a, b) => a + b, 0);
+  const squares = game.scores.map(s => s >= 3500 ? "🟩" : s >= 1500 ? "🟨" : "🟥").join("");
+  const url = new URL(location.href); url.search = "?seed=" + encodeURIComponent(game.seed);
+  return `ProductGuessr${game.daily ? " " + game.seed : ""}: ${fmt(total)} / ${fmt(ROUNDS * MAX_POINTS)}\n${squares}\n${url}`;
+}
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+
+$("guess").onclick = submitGuess;
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === " ") {
+    const phase = document.body.dataset.phase;
+    if (phase === "guess" && pin) { e.preventDefault(); submitGuess(); }
+    else if (phase === "reveal" && document.activeElement !== $("next")) { e.preventDefault(); $("next").click(); }
+  }
+});
+$("play-daily").onclick = () => start(today(), true);
+$("play-random").onclick = () => start(Math.random().toString(36).slice(2, 8), false);
+$("again").onclick = () => start(Math.random().toString(36).slice(2, 8), false);
+$("explore").onclick = () => {
+  $("end").hidden = true; $("hud").hidden = true;
+  $("hint").hidden = false; $("hint").textContent = "Explore mode · hover dots to see products";
+  $("guess").hidden = false; $("guess").disabled = false; $("guess").textContent = "Play again";
+  $("guess").onclick = () => { $("guess").textContent = "Guess"; $("guess").onclick = submitGuess;
+                               $("hint").textContent = matchMedia("(pointer: coarse)").matches ? "Drag to explore · tap to drop your pin" : "Drag to explore · click to drop your pin"; start(Math.random().toString(36).slice(2, 8), false); };
+  setPhase("explore");
+};
+$("share").onclick = async () => {
+  const text = shareText();
+  if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+    try { await navigator.share({ text }); return; } catch {}
+  }
+  try { await navigator.clipboard.writeText(text); toast("Result copied, paste it anywhere"); }
+  catch { prompt("Copy your result:", text); }
+};
+
+// ---------- Boot ----------
+if (matchMedia("(pointer: coarse)").matches) $("hint").textContent = "Drag to explore · tap to drop your pin";
+addEventListener("resize", resize);
+resize();
+fetch("data.json").then(r => r.json()).then(data => {
+  D = data;
+  byFamily = D.families.map(() => []);
+  D.items.forEach((row, i) => byFamily[row[4]].push(i));
+  $("legend").innerHTML = D.families.map((f, i) => byFamily[i].length ? `<span><i style="background:${COLORS[i]}"></i>${esc(f)}</span>` : "").join("");
+  $("loading").hidden = true;
+  requestAnimationFrame(draw);
+
+  // A shared link (?seed=…) jumps straight into the same five products.
+  const seed = new URLSearchParams(location.search).get("seed");
+  if (seed) start(seed, /^\d{4}-\d{2}-\d{2}$/.test(seed));
+  else { $("intro").hidden = false; setPhase("intro"); }
+}).catch(() => { $("loading").textContent = "Couldn’t load the map data."; });
+</script>
+</body>
+</html>
